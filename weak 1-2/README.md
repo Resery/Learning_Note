@@ -22,6 +22,7 @@
 
 <stl_construct.h>中定义了两个基本函数：一个是负责构造的construct()，另一个是负责析构的destroy()。
 
+
 ![](https://resery-tuchuang.oss-cn-beijing.aliyuncs.com/2020-07-05_23-34-35.png)
 
 ### stl_construct.h
