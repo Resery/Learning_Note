@@ -819,3 +819,300 @@ inline void uninitialized_fill(_ForwardIter __first,
 STL源码剖析上这张图描述的特别好：
 
 ![](https://resery-tuchuang.oss-cn-beijing.aliyuncs.com/2020-07-06_18-34-41.png)
+## 迭代器
+
+迭代器的五种型别：
+
+1. value type：指迭代器所指对象的型别
+
+2. difference type：用来表示两个迭代器之间的距离，如果说一个泛型算法提供计数功能，则它的返回值必须是difference type类型，如conut函数
+
+   ```
+   template <class I,class T>
+   typename iterator_traits<I>::difference_type
+   count(I first,I last,const &T value)
+   {
+   	typename iterator_traits<I>::difference_type n =0;
+   	for( ; first!= lasy ; ++first)
+   	{
+   		if(*first == value)
+   		++n;
+   	}
+   	return n;
+   }
+   ```
+
+   可以直接看到typename 定义了iterator_traits的difference_type类型为返回类型
+
+   difference_type为了支持原生指针，提供了特化版本
+
+   ```
+   template <class I>
+   struct iterator_traits{
+   	typedef typenmae I::difference_type difference_type;
+   };
+   
+   template <class T>
+   struct iterator_traits<*T>{
+   	typedef ptrdiff_t difference_type;
+   };
+   
+   template <class T>
+   struct iterator_traits<const *T>{
+   	typedef ptrdiff_t difference_type;
+   };
+   ```
+
+3. reference type和pointer type：
+
+   简单的就可以理解为reference是指迭代器指向对象的引用，pointer就是迭代器指向对象的指针。
+
+   例如下面的代码：
+
+   ```
+   Item& operator*() const {return *ptr;}
+   Item* operator->() const {return ptr;}
+   ```
+
+   这段代码开始也是理解不太好，分不清哪个是reference type哪个是pointer type，然后后来仔细看了一下，有一个自己的分析方法，先看第一行。
+
+   ```
+   Item& operator*() const {return *ptr;}
+   ```
+
+   这一行中返回的是一个return *ptr，意思就是返回的是一个指针，哪如果我们现在要让传回来的东西是它的地址，只有传回引用才可以传回它的地址。
+
+   ```
+   Item* operator->() const {return ptr;}
+   ```
+
+   这一行中返回的是一个ptr，没有了前面的*，现在ptr就是一个地址，哪现在我们要让传回来的东西是一个指向这个地址的指针，所以前面就应该设置传回指针。
+
+   这个解释的也不太好，就能让自己浅显的理解一下。
+
+   这两个型别的特化版：
+
+   ```
+   template <class I>
+   struct iterator_traits{
+   	typedef typenmae I::pointer pointer;
+   	typedef typenmae I::reference reference;
+   };
+   
+   template <class T>
+   struct iterator_traits<*T>{
+   	typedef T* pointer;
+   	typedef T& reference;
+   };
+   
+   template <class T>
+   struct iterator_traits<const *T>{
+   	typedef const T* pointer;
+   	typedef const T& reference;
+   };
+   ```
+
+4. iterator_category:
+
+   说这个型别之前得说一下迭代器的分类
+
+   > 迭代器分为五类：
+   >
+   > 1. input iterator：输入迭代器，只读，且只能一次读操作，支持操作：++p,p++,!=,==,=*p,p->；
+   >
+   > 2. output iterator：输出迭代器，只写，且只能一次写操作，支持操作：++p,p++；
+   >
+   > 3. forward iterator：正向迭代器，可多次读写，支持输入输出迭代器的所有操作；
+   >
+   > 4. bidirectional iterator：双向迭代器，支持正向迭代器的所有操作，且支持操作：--p,--p；
+   >
+   > 5. random access iterator：随机访问迭代器，除了支持双向迭代器操作外，还支持：p[n],p+n,n+p,p-n,p+=n,p-=n,p1-p2,p1<p2,p1>p2,p1>=p2,p1<=p2；
+   >
+   >    这是迭代器分类从属关系
+   >
+   > ![](https://resery-tuchuang.oss-cn-beijing.aliyuncs.com/2020-07-08_19-07-52.png)
+   >
+   > 设计算法时，如果可能，尽量要针对上图中的某种迭代器提供一个明确定义，并针对更强化的某种迭代器提供另一种定义，这样才能在不同情况下提供最大效率。举个例子就是某个算法可以接受forward iterator，但是你以random access iterator喂给它，它也可以接受，但是不一定是最佳的
+   >
+   > 以advance()为例，这个函数接受两个参数，一个是迭代器p一个是数值n，功能就是前进n次，下面有三份定义分别是为input iterator、bidirectional iterator和random access iterator设计的
+   >
+   > ```
+   > template <class InputIterator,class Distance>
+   > void advance_II(InputIterator& i,Distance n)
+   > {
+   > 	while(n--)
+   > 		++i;
+   > }
+   > 
+   > template <class BidirectionalIterator,class Distance>
+   > void advance_BI(BidirectionalIterator& i,Distance n)
+   > {
+   > 	if(n > 0){
+   > 		while(n--)
+   > 			++i;
+   > 	}
+   > 	else{
+   > 		while(n++)
+   > 			--i;
+   > 	}
+   > }
+   > 
+   > template <class RandomAccessIterator,class Distance>
+   > void advance_RAI(RandomAccessIterator& i,Distance n)
+   > {
+   > 	i += n;
+   > }
+   > ```
+   >
+   > 但是上面的代码是有缺陷的，即因为效率会导致某些类型的迭代器接受不了，比如说为了效率选择了RandomAccessIterator但是就不能接受IuputIterator了，但是选择了InputIterator又会导致效率低下，所以需要改进，改进的办法就是函数重载。
+   >
+   > 要执行重载就必须有一个确定的参数，才能进行重载，上面advance的两个参数都不是确定的（不确定的原因是因为他们是模板参数，需要靠编译器来确定具体是哪种型别），所以我们就对应上面的五个类型的迭代器定义五个class
+   >
+   > ```
+   > class input_iterator_tag {};
+   > class output_iterator_tag {};
+   > class forward_iterator_tag : public input_iterator_tag {};
+   > class bidirectional_iterator_tag : public forward_iterator_tag {};
+   > class random_access_iterator_tag : public bidirectional_iterator_tag {}；;
+   > ```
+   >
+   > 现在就重新设计一下__advance，加上第三个参数，形成重载。
+   >
+   > ```
+   > template <class InputIterator,class Distance>
+   > inline void advance(InputIterator& i,Distance n)
+   > {
+   > 	return __advance(RandomAccessIterator& i,Distance n,iterator_traits<Iterator>::iterator_category());
+   > }
+   > 
+   > template <class InputIterator,class Distance>
+   > void __advance(InputIterator& i,Distance n,input_iterator_tag)
+   > {
+   > 	while(n--)
+   > 		++i;
+   > }
+   > 
+   > template <class ForwardIterator,class Distance>
+   > void __advance(ForwardIterator& i,Distance n,forward_iterator_tag)
+   > {
+   > 	advance(i,n,input_iterator_tag());
+   > }
+   > 
+   > template <class BidirectionalIterator,class Distance>
+   > void __advance(BidirectionalIterator& i,Distance n,bidirectional_iterator_tag)
+   > {
+   > 	if(n > 0){
+   > 		while(n--)
+   > 			++i;
+   > 	}
+   > 	else{
+   > 		while(n++)
+   > 			--i;
+   > 	}
+   > }
+   > 
+   > template <class RandomAccessIterator,class Distance>
+   > void __advance(RandomAccessIterator& i,Distance n,random_access_iterator_tag)
+   > {
+   > 	i += n;
+   > }
+   > 
+   > template <class InputIterator,class Distance>
+   > inline void advance(InputIterator& i,Distance n)
+   > {
+   > 	return __advance(RandomAccessIterator& i,Distance n,iterator_traits<Iterator>::iterator_category());
+   > }
+   > ```
+   >
+   > 上面的代码中使用到了`iterator_traits<Iterator>::iterator_category()`这句代码，然而这个我们还没有设计，所以需要设计一个iterator_traits。
+   >
+   > ```
+   > template <class _Iterator>
+   > struct iterator_traits {
+   > 	typedef typename _Iterator::iterator_category iterator_category;
+   > 	typedef typename _Iterator::value_type        value_type;
+   > 	typedef typename _Iterator::difference_type   difference_type;
+   > 	typedef typename _Iterator::pointer           pointer;
+   > 	typedef typename _Iterator::reference         reference;
+   > };
+   > //原生指针特化版
+   > template <class _Tp>
+   > struct iterator_traits<_Tp*> {
+   > 	typedef random_access_iterator_tag iterator_category;
+   > 	typedef _Tp                         value_type;
+   > 	typedef ptrdiff_t                   difference_type;
+   > 	typedef _Tp* 						pointer;
+   > 	typedef _Tp& 						reference;
+   > };
+   > //const原生指针特化版
+   > template <class _Tp>
+   > struct iterator_traits<const _Tp*> {
+   > 	typedef random_access_iterator_tag iterator_category;
+   > 	typedef _Tp                         value_type;
+   > 	typedef ptrdiff_t                   difference_type;
+   > 	typedef const _Tp* 					pointer;
+   > 	typedef const _Tp& 					reference;
+   > };
+   > ```
+   >
+   > 我在往文章上写下面的这几行代码的时候，也感觉到了不对的地方，advance不应该是可以接受五种类型的迭代器嘛，为什么这个class直接定义成了InputIterator，然后书中给了答案，目的就是消除单纯传递调用的函数，我自己的理解，单纯传递调用的函数就是这个函数没有做什么事情，只做了一件事就是调用另一个函数。但是这个只是我个人的理解不知道是否正确。
+   >
+   > ```
+   > template <class InputIterator,class Distance>
+   > inline void advance(InputIterator& i,Distance n)
+   > {
+   > 	return __advance(RandomAccessIterator& i,Distance n,iterator_traits<Iterator>::iterator_category());
+   > }
+   > ```
+   >
+   > 对应着自己的理解，和上面的代码终端这几行
+   >
+   > ```
+   > template <class ForwardIterator,class Distance>
+   > void __advance(ForwardIterator& i,Distance n,forward_iterator_tag)
+   > {
+   > 	advance(i,n,input_iterator_tag());
+   > }
+   > ```
+   >
+   > 书上说这个就是单纯传递调用函数，确实没做什么别的操作，只调用了别的函数。
+   >
+   > 书上给的一个例子也差不多是这样的，例子如下：。
+   >
+   > ```
+   > #include <iostream>
+   > 
+   > using namespace std;
+   > 
+   > struct B {};
+   > struct D1 : public B {};
+   > struct D2 : public D1 {};
+   > 
+   > template <class I>
+   > func(I& p, B){
+   > 	cout << "B Version" << endl;
+   > }
+   > 
+   > template <class I>
+   > func(I& p, D2){
+   > 	cout << "D2 Version" << endl;
+   > }
+   > 
+   > int main(){
+   > 	int *p;
+   > 	func(p,B());
+   > 	func(p,D1());
+   > 	func(p,D2());
+   > }
+   > 
+   > 输出结果：
+   > B Version
+   > B Version
+   > D2 Version
+   > ```
+   >
+   > 从上面的代码中的结果来看，由于没有定义D1这个参数的函数重载版本，所以如果调用这个func(p,D1())就会直接去传递它的父类，也就是B，所以就会打印出两个B Version，这个和自己理解的单纯传递调用函数也差不多没有做什么操作，就是调用了别的函数
+
+   
+
+
