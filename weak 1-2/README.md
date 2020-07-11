@@ -1,29 +1,3 @@
-- [概述](#--)
-  * [六大组件：](#-----)
-  * [配置器](#---)
-    + [stl_construct.h](#stl-constructh)
-    + [traits](#traits)
-    + [stl_alloc.h](#stl-alloch)
-    + [五个全局函数](#------)
-      - [uninitialized_fill_n:](#uninitialized-fill-n-)
-      - [uninitialized_copy:](#uninitialized-copy-)
-      - [uninitialized_fill:](#uninitialized-fill-)
-  * [迭代器](#---)
-    + [迭代器配接器](#------)
-      - [插入迭代器](#-----)
-      - [反向迭代器](#-----)
-  * [vector](#vector)
-    + [vector容器的数据结构](#vector-------)
-    + [vector迭代器](#vector---)
-    + [vector的构造函数和析构函数](#vector----------)
-    + [vector容器的成员函数](#vector-------)
-    + [vector的操作符重载](#vector------)
-  * [算法](#--)
-
-<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
-
-
-# 
 # 概述
 
 ## 六大组件：
