@@ -300,6 +300,6 @@ vector：
 
 也不知道这个自己理解的算不算内存模型。
 
-![](https://resery-tuchuang.oss-cn-beijing.aliyuncs.com/2020-07-11_15-25-34.png)
+![](2020-07-11_15-25-34.png)
 
 
