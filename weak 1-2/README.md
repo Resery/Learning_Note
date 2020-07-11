@@ -1,4 +1,4 @@
-[作业] (homework.md)
+[作业] (/homework.md)
 # 概述
 
 ## 六大组件：
