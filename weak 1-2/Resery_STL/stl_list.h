@@ -162,7 +162,7 @@ public:
 		link_type __n = (link_type)__position.node;
 		__prev_node->_next = __next_node;
 		__next_node->_prev = __prev_node;
-		destory(&__n->_data);
+		_Destroy(&__n->_data);
 		put_node(__n);
 		return iterator((link_type)__next_node);
 	}
