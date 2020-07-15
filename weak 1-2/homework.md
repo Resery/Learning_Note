@@ -286,6 +286,8 @@
 
 4. 总结：就是一定要避免浅拷贝的情况发生，只要发生浅拷贝就会有double free和uaf出现(个人见解)，其次就是析构函数一定要设计的合理即free或者delete之后一定要置指针为空。
 
+5. list的erase和vector的一样，也是会调用对应的析构函数，如果说析构函数设置的不合理，也就可以构造出double free和uaf， 其中在试splice函数的时候也发现其中splice如果拼接的是自身也会出现奇怪的问题，poc和奇怪的问题，以后再补XD
+
 ### 思考题2：
 
 >  为什么实现了uninitialized_xxx和copy/fill这样两组不同的函数
@@ -302,4 +304,6 @@ vector：
 
 ![](2020-07-11_15-25-34.png)
 
+list：
 
+list的函数模型就是链表，关于list每一个结点有一个堆空间，堆空间中存储着next prev data其中顺序也是这样排列的显示next然后是prev然后是data
