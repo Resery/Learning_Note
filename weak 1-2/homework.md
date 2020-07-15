@@ -307,3 +307,5 @@ vector：
 list：
 
 list的函数模型就是链表，关于list每一个结点有一个堆空间，堆空间中存储着next prev data其中顺序也是这样排列的显示next然后是prev然后是data
+
+![](2020-07-15_20-58-48.png)
