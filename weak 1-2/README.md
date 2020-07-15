@@ -2021,6 +2021,213 @@ vector<_Tp, _Alloc>::operator=(const vector<_Tp, _Alloc> &__x) {
     return *this;
 }
 ```
+## list
+
+list容器是一个循环的双向链表，它的内存空间效率较前文介绍的vector容器高。因为vector容器的内存空间是连续存储的，且在分配内存空间时，会分配额外的可用空间；而list容器的内存空间不一定是连续存储，内存之间是采用迭代器或节点指针进行连接，并且在插入或删除数据节点时，就配置或释放一个数据节点，并不会分配额外的内存空间，这两个操作过程都是常数时间。
+
+与vector容器不同的是，list容器在进行插入操作或拼接操作时，迭代器并不会失效；且不能以普通指针作为迭代器，因为普通指针的+或-操作只能指向连续空间的后移地址或前移个地址，不能保证指向list的下一个节点，迭代器必须是双向迭代器，因为list容器具备有前移和后移的能力。
+
+> 补充：
+>
+> 因为list为循环双向链表，所以说最后的end所指向的应该是一个空结点，begin的前一个即为end，end的后一个即为begin，当begin和end指向同一个地方的时候即链表为空。
+
+### list的数据结构
+
+因为list为循环双向链表，所以就必须有两个指针，一个指针指向前一个结点，一个指针指向后一个结点。再就是需要有一个数据data，list的数据结构就包括这三个内容。代码就不列了
+
+### list的迭代器
+
+因为是双向链表所以说，迭代器的类型应该是bidirectional_iterator，所以说需要对操作符进行重载，即没有+、-等操作，只有++，--，所以说就需要对++,--进行重载，让他直接返回前一个结点或者后一个结点即可，构造也就分为三种，第一种为空，第二种传递一个node，第三种就是拷贝构造。
+
+### list的构造函数和析构函数
+
+五种构造方式，分别是构造一个空结点，构造n个空结点，构造n个值为value的结点，给出一个范围first，last以这个范围构造，还有一个是拷贝构造
+
+list的析构函数为空
+
+### list的成员函数
+
+list支持很多操作，比如基本的返回第一个结点，最后一个，反向的第一个，反向的第二个，是否为空，size多大，max_size多大等等。
+
+关于元素操作包含以下几个push_front,push_back,pop_front,pop_back,erase,clear,remove,unique,splice,merge,reverse,sort
+
+push_front即在头节点进行插入其内部就是在调用insert，push_back同理。
+
+pop_back,pop_front，其实是在调用erase。
+
+clear，也是在调用erase。
+
+erase很简单的清除。
+
+remove，接受一个参数value，在列表中查找与value相同的值，然后删除掉，
+
+unique，从头遍历到尾，删除list中重复的元素
+
+merge，从头遍历到尾，把list2中小于list1的值插入到当前first的，然后如果说list1遍历结束，而list2还有内容，则直接把list2的剩余部分拼接到list1尾部，所以说如果两个列表都是有序的话，merge操作之后生成的新的列表也会是有序的，如果说两个列表都是无序的或者是一个有序一个无序则会形成一个相对有序的链表
+
+reverse，即迭代器逆反
+
+sort，这里的sort没有使用stl算法里的sort，因为那里面的sort，使用的是随机访问迭代器即下标访问，list不支持，所以就必须使用自己的sort，自己的sort采用的是快速排序
+
+splice，这个其实底层都是在调用transfer，本来想直接调用transfer做一个调试的，但是transfer没有公共接口，所以就没做到，transfer接受三个参数第一个参数是插入的地方，第二个参数是插入的范围的左边界，第三个参数是插入的范围的右边界，即二三参数的范围就是[left，rgiht)，也就是把[left，rgiht)范围内的全部内容插入到pos之前，其中splice支持在同一条链表中进行操作，但是pos不能在[left，rgiht)范围之内，然后我就测试了以下如果说在这个范围之内会怎么样，果然出现了奇怪的效果，经过splice操作之后再使用迭代器就不能进行输出了，++，--操作也没有任何作用，然后使用其余方式输出，得到的值也不是我创建的list中的内容，不过具体原因还没有搞清楚，只是发现了这个问题。
+
+> 补充：
+>
+> 在上面写iterator的时候发现有两个操作符重载，*和->这两个操作符重载返回的类型分别是reference和pointer，但是不太理解具体是什么意思，就写了个小的测试程序，代码如下
+>
+> ```
+> #include <stdio.h>
+> #include <string>
+> #include <algorithm>
+> #include <iostream>
+> #include <list>
+> 
+> using namespace std;
+> 
+> template <class T>
+> struct _list_n {
+>     typedef void* voidpointer;
+>     _list_n() : data(2) {}
+>     _list_n(T X) : data(X) {}
+>     _list_n(const _list_n& x) : data(x.data) {}
+>     T data;
+> };
+> 
+> template <class TP, class _ref, class _poi>
+> struct _list_it {
+>     typedef _list_n<TP>* link_type;
+>     typedef _list_it<TP, TP&, TP*> iterator;
+>     typedef _ref reference;
+>     typedef _poi pointer;
+>     link_type node;
+>     TP oo = 30;
+>     _list_it(link_type x) : node(x) { cout << "ctor" << "\t\t" << &x->data << endl; }
+>     _list_it() {}
+>     _list_it(const iterator& x) : node(x.node) { }
+>     reference operator*() const { return (*node).data; }
+>     pointer operator->() const { return &(operator*()); }
+> };
+> 
+> int main() {
+> 
+>     _list_n<int>(*a) (new _list_n<int>(99));
+>     _list_n<int>(*b) (new _list_n<int>(88));
+>     
+>     _list_it<int, int&, int*> _a(a);
+>     _list_it<int, int&, int*> _b(b);
+>     _list_it<int, int&, int*>* _c(&_b);
+>     
+>     *_a = 10;       //*_a = &a
+>     **_c = 20;
+>     cout << "------------------------" << endl;
+>     cout << "a address: " << "\t" << &(a->data) << endl;
+>     cout << "b address: " << "\t" << &(b->data) << endl;
+>     cout << "------------------------" << endl;
+>     cout << "test _a&* " << "\t" << &*_a << endl;   // a address
+>     cout << "test _a* " << "\t" << *_a << endl;    // a value    // a value
+>     cout << "------------------------" << endl;
+>     cout << "test _c&* " << "\t" << &**_c << endl;
+>     cout << "test _c* " << "\t" << **_c << endl;
+>     cout << "test _c-> " << "\t" << _c->oo << endl;
+> 
+> }
+> ```
+>
+> 输出结果：
+>
+> ```
+> ctor            011CFFF8
+> ctor            011CA858
+> ------------------------
+> a address:      011CFFF8
+> b address:      011CA858
+> ------------------------
+> test _a&*       011CFFF8
+> test _a*        10
+> ------------------------
+> test _c&*       011CA858
+> test _c*        20
+> test _c->       30
+> ```
+>
+> 从输出结果来看，`reference operator*() const { return (*node).data; }`其实想表达的就是返回一个指向data的指针，然后返回值类型是引用，即达到这个效果  \*p=&\_p，意思就是对\*p赋值其实就是在对\_p赋值，理解了`reference operator*() const { return (*node).data; }`再看`pointer operator->()const { return &(operator*()); }`也就清晰多了，即返回上面的\*p的地址再让指针指向他，因为->的左值必须是指针。后来翻看了以下原本的*和->定义，其实iterator中的这两个操作符重载和定义的差的不多，只是定义的第一个\*重载直接return的指针，而这里是return的data的指针，因为是list所以说返回的就得使data的指针，才进行了这个操作符重载
+
+### list的操作符重载
+
+这个就看代码吧，代码注释的自我感觉还可以XD
+
+```
+//操作符重载
+//相等判断的就是链表里从头到尾的每一个指针是不是相同的，指针相同代表所指的东西相同
+template <class _Tp, class _Alloc>
+inline bool
+operator==(const list<_Tp, _Alloc>& __x, const list<_Tp, _Alloc>& __y)
+{
+	typedef typename list<_Tp, _Alloc>::const_iterator const_iterator;
+	const_iterator __end1 = __x.end();
+	const_iterator __end2 = __y.end();
+
+	const_iterator __i1 = __x.begin();
+	const_iterator __i2 = __y.begin();
+	while (__i1 != __end1 && __i2 != __end2 && *__i1 == *__i2) {
+		++__i1;
+		++__i2;
+	}
+	return __i1 == __end1 && __i2 == __end2;
+}
+//小于的判断就是调用了算法里的lexicographical_compare，也就是对头尾遍历，比较所指的内容的大小
+template <class _Tp, class _Alloc>
+inline bool operator<(const list<_Tp, _Alloc>& __x,
+	const list<_Tp, _Alloc>& __y)
+{
+	return lexicographical_compare(__x.begin(), __x.end(),
+		__y.begin(), __y.end());
+}
+//这里因为重载了==运算符，所以直接进行上面重载的==操作，即相同就返回!1也就是0，不相同就返回!0也就是1
+template <class _Tp, class _Alloc>
+inline bool operator!=(const list<_Tp, _Alloc>& __x,
+	const list<_Tp, _Alloc>& __y) {
+	return !(__x == __y);
+}
+//这里也是直接使用上面重载过的<运算符，和上面不同的是上面比较的是x<y而这里是y<x
+template <class _Tp, class _Alloc>
+inline bool operator>(const list<_Tp, _Alloc>& __x,
+	const list<_Tp, _Alloc>& __y) {
+	return __y < __x;
+}
+//这个也是使用上面重载过的<运算符，如果说上面的<操作返回的是0，也就代表两个列表所有元素不小于，即有可能x>y或者x=y
+//因为这里比较的是y<x所以说也就变成了y>=x也就是x<=y
+template <class _Tp, class _Alloc>
+inline bool operator<=(const list<_Tp, _Alloc>& __x,
+	const list<_Tp, _Alloc>& __y) {
+	return !(__y < __x);
+}
+//这个也是使用上面重载过的<运算符，如果说上面的<操作返回的是0，也就代表两个列表所有元素不小于，即有可能x>y或者x=y
+template <class _Tp, class _Alloc>
+inline bool operator>=(const list<_Tp, _Alloc>& __x,
+	const list<_Tp, _Alloc>& __y) {
+	return !(__x < __y);
+}
+//重载赋值操作符，从头遍历到尾把相应的值赋给x对应地方的，然后如果说有一个到了尽头，就进行检测，检测哪一个列表到头了
+//如果=右面的到头了，就把=左面的列表剩余的部分删除掉，如果=左面到头了，就把=右面的全部插入到=左面的尾部
+template <class _Tp, class _Alloc>
+list<_Tp, _Alloc>& list<_Tp, _Alloc>::operator=(const list<_Tp, _Alloc>& __x)
+{
+	if (this != &__x) {
+		iterator __first1 = begin();
+		iterator __last1 = end();
+		iterator __first2 = __x.begin();
+		iterator __last2 = __x.end();
+		while (__first1 != __last1 && __first2 != __last2)
+			*__first1++ = *__first2++;
+		if (__first2 == __last2)
+			erase(__first1, __last1);
+		else
+			insert(__last1, __first2, __last2);
+	}
+	return *this;
+}
+```
 
 ## 算法
 
