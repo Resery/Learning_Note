@@ -1,3 +1,3 @@
-**CSAPP:** [笔记](weak&#32;3-6/CSAPP)
+**CSAPP:** [笔记](weak&#32;3-6/CSAPP/)
 
-**LAB:** [笔记](weak&#32;3-6/LAB)
+**LAB:** [笔记](weak&#32;3-6/LAB/)
