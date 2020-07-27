@@ -1,3 +1,3 @@
-**CSAPP:** [笔记](/CSAPP)
+**CSAPP:** [笔记](CSAPP)
 
-**LAB:** [笔记](/LAB)
+**LAB:** [笔记](LAB)
