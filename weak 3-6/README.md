@@ -1,3 +1,10 @@
-**CSAPP:** [笔记](CSAPP)
+**CSAPP:** [Notes](CSAPP)
 
-**LAB:** [笔记](LAB)
+**LAB:** [Notes](LAB)
+
+**Ucore Lab:** [Notes](Ucore/Notes/)
+
+**Ucore Lab Code:** [Code](Ucore/Lab/)
+
+**Ucore Lab Exercise:** [Exercise](Ucore/Exercise/)
+

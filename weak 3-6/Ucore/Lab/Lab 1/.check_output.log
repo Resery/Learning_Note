@@ -1,0 +1,64 @@
+(THU.CST) os is loading ...
+
+Special kernel symbols:
+  entry  0x00100000 (phys)
+  etext  0x00103a4e (phys)
+  edata  0x0010fa16 (phys)
+  end    0x00110da0 (phys)
+Kernel executable memory footprint: 68KB
+ebp:0x00007b28 eip:0x00100a73 args:0x00010094 0x00010094 0x00007b58 0x00100097
+    kern/debug/kdebug.c:306: print_stackframe+22
+ebp:0x00007b38 eip:0x00100d78 args:0x00000000 0x00000000 0x00000000 0x00007ba8
+    kern/debug/kmonitor.c:126: mon_backtrace+11
+ebp:0x00007b58 eip:0x00100097 args:0x00000000 0x00007b80 0xffff0000 0x00007b84
+    kern/init/init.c:49: grade_backtrace2+34
+ebp:0x00007b78 eip:0x001000c1 args:0x00000000 0xffff0000 0x00007ba4 0x00000029
+    kern/init/init.c:54: grade_backtrace1+39
+ebp:0x00007b98 eip:0x001000e0 args:0x00000000 0x00100000 0xffff0000 0x0000001d
+    kern/init/init.c:59: grade_backtrace0+24
+ebp:0x00007bb8 eip:0x00100106 args:0x00103a7c 0x00103a60 0x0000138a 0x00000000
+    kern/init/init.c:64: grade_backtrace+35
+ebp:0x00007be8 eip:0x00100055 args:0x00000000 0x00000000 0x00000000 0x00007c4f
+    kern/init/init.c:30: kern_init+85
+ebp:0x00007bf8 eip:0x00007d6a args:0xc031fcfa 0xc08ed88e 0x64e4d08e 0xfa7502a8
+    <unknow>: -- 0x00007d6a --
+++ setup timer interrupts
+0: @ring 0
+0:  cs = 8
+0:  ds = 10
+0:  es = 10
+0:  ss = 10
++++ switch to  user  mode +++
+1: @ring 3
+1:  cs = 1b
+1:  ds = 23
+1:  es = 23
+1:  ss = 23
++++ switch to kernel mode +++
+2: @ring 0
+2:  cs = 8
+2:  ds = 10
+2:  es = 10
+2:  ss = 10
+100 ticks
+End of Test.
+kernel panic at kern/trap/trap.c:18:
+    EOT: kernel seems ok.
+stack trackback:
+ebp:0x00007ab0 eip:0x00100a73 args:0x00103b28 0x00007af4 0x00000012 0x00007b2c
+    kern/debug/kdebug.c:306: print_stackframe+22
+ebp:0x00007ae0 eip:0x0010042b args:0x00103e0e 0x00000012 0x00103df8 0x00000010
+    kern/debug/panic.c:27: __panic+104
+ebp:0x00007b00 eip:0x0010184f args:0x00007b38 0x00100267 0x00100218 0x00007b2c
+    kern/trap/trap.c:36: idt_init+0
+ebp:0x00007b50 eip:0x00101e1f args:0x00007b7c 0x0000000c 0x00007b74 0x00010094
+    kern/trap/trap.c:237: trap_dispatch+112
+ebp:0x00007b70 eip:0x001022a2 args:0x00007b7c 0x00000000 0x00010094 0x00007be8
+    kern/trap/trap.c:0: trap+17
+ebp:0x00007be8 eip:0x00102d2d args:0x00000000 0x00000000 0x00000000 0x00007c4f
+    kern/trap/trapentry.S:33: <unknown>+0
+ebp:0x00007bf8 eip:0x00007d6a args:0xc031fcfa 0xc08ed88e 0x64e4d08e 0xfa7502a8
+    <unknow>: -- 0x00007d6a --
+Welcome to the kernel debug monitor!!
+Type 'help' for a list of commands.
+K> 
