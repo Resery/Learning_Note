@@ -8,6 +8,8 @@
 #include <default_pmm.h>
 #include <sync.h>
 #include <error.h>
+#include <swap.h>
+#include <vmm.h>
 
 /* *
  * Task State Segment:
@@ -153,11 +155,22 @@ struct Page *
 alloc_pages(size_t n) {
     struct Page *page=NULL;
     bool intr_flag;
-    local_intr_save(intr_flag);
+    
+    while (1)
     {
-        page = pmm_manager->alloc_pages(n);
+         local_intr_save(intr_flag);
+         {
+              page = pmm_manager->alloc_pages(n);
+         }
+         local_intr_restore(intr_flag);
+
+         if (page != NULL || n > 1 || swap_init_ok == 0) break;
+         
+         extern struct mm_struct *check_mm_struct;
+         //cprintf("page %x, call swap_out in alloc_pages %d\n",page, n);
+         swap_out(check_mm_struct, n, 0);
     }
-    local_intr_restore(intr_flag);
+    //cprintf("n %d,get page %x, No %d in alloc_pages\n",n,page,(page-pages));
     return page;
 }
 
@@ -196,14 +209,8 @@ page_init(void) {
     int i;
     for (i = 0; i < memmap->nr_map; i ++) {
         uint64_t begin = memmap->map[i].addr, end = begin + memmap->map[i].size;
-        cprintf("  memory: %08llx, [%08llx, %08llx], type = %d.",
+        cprintf("  memory: %08llx, [%08llx, %08llx], type = %d.\n",
                 memmap->map[i].size, begin, end - 1, memmap->map[i].type);
-        if(memmap->map[i].type == 1){
-            cprintf("可以使用的物理内存空间\n");
-        }
-        if(memmap->map[i].type == 2){
-            cprintf("不能使用的物理内存空间\n");
-        }
         if (memmap->map[i].type == E820_ARM) {
             if (maxpa < end && begin < KMEMSIZE) {
                 maxpa = end;
@@ -366,7 +373,7 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
     pde_t *pdep = &pgdir[PDX(la)];
     if(!(*pdep & PTE_P)){
         struct Page *page;
-        if(create && (page = alloc_page())){
+        if(create == 1 && (page = alloc_page())){
             set_page_ref(page,1);
             uintptr_t pa = page2pa(page);
             memset(KADDR(pa), 0, PGSIZE);
@@ -479,6 +486,29 @@ tlb_invalidate(pde_t *pgdir, uintptr_t la) {
     if (rcr3() == PADDR(pgdir)) {
         invlpg((void *)la);
     }
+}
+
+// pgdir_alloc_page - call alloc_page & page_insert functions to 
+//                  - allocate a page size memory & setup an addr map
+//                  - pa<->la with linear address la and the PDT pgdir
+struct Page *
+pgdir_alloc_page(pde_t *pgdir, uintptr_t la, uint32_t perm) {
+    struct Page *page = alloc_page();
+    if (page != NULL) {
+        if (page_insert(pgdir, page, la, perm) != 0) {
+            free_page(page);
+            return NULL;
+        }
+        if (swap_init_ok){
+            swap_map_swappable(check_mm_struct, la, page, 0);
+            page->pra_vaddr=la;
+            assert(page_ref(page) == 1);
+            //cprintf("get No. %d  page: pra_vaddr %x, pra_link.prev %x, pra_link_next %x in pgdir_alloc_page\n", (page-pages), page->pra_vaddr,page->pra_page_link.prev, page->pra_page_link.next);
+        }
+
+    }
+
+    return page;
 }
 
 static void
@@ -632,3 +662,24 @@ print_pgdir(void) {
     cprintf("--------------------- END ---------------------\n");
 }
 
+void *
+kmalloc(size_t n) {
+    void * ptr=NULL;
+    struct Page *base=NULL;
+    assert(n > 0 && n < 1024*0124);
+    int num_pages=(n+PGSIZE-1)/PGSIZE;
+    base = alloc_pages(num_pages);
+    assert(base != NULL);
+    ptr=page2kva(base);
+    return ptr;
+}
+
+void 
+kfree(void *ptr, size_t n) {
+    assert(n > 0 && n < 1024*0124);
+    assert(ptr != NULL);
+    struct Page *base=NULL;
+    int num_pages=(n+PGSIZE-1)/PGSIZE;
+    base = kva2page(ptr);
+    free_pages(base, num_pages);
+}
