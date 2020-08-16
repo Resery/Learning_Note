@@ -2,7 +2,7 @@
 
 Special kernel symbols:
   entry  0xc0100036 (phys)
-  etext  0xc010ca31 (phys)
+  etext  0xc010ca4b (phys)
   edata  0xc01b2000 (phys)
   end    0xc01b51e4 (phys)
 Kernel executable memory footprint: 725KB
@@ -16,9 +16,9 @@ ebp:0xc012df88 eip:0xc010010e args:0x00000000 0xffff0000 0xc012dfb4 0x0000002a
     kern/init/init.c:65: grade_backtrace1+39
 ebp:0xc012dfa8 eip:0xc010012d args:0x00000000 0xc0100036 0xffff0000 0x0000001d
     kern/init/init.c:70: grade_backtrace0+24
-ebp:0xc012dfc8 eip:0xc0100153 args:0xc010ca5c 0xc010ca40 0x000031e4 0x00000000
+ebp:0xc012dfc8 eip:0xc0100153 args:0xc010ca7c 0xc010ca60 0x000031e4 0x00000000
     kern/init/init.c:75: grade_backtrace+35
-ebp:0xc012dff8 eip:0xc010008b args:0xc010cc50 0xc010cc58 0xc0100e45 0xc010cc77
+ebp:0xc012dff8 eip:0xc010008b args:0xc010cc70 0xc010cc78 0xc0100e45 0xc010cc97
     kern/init/init.c:35: kern_init+85
 memory management: default_pmm_manager
 e820map:
@@ -92,49 +92,40 @@ swap_in: load disk swap entry 2 with swap_page in vadr 0x1000
 count is 0, total is 5
 check_swap() succeeded!
 ++ setup timer interrupts
-trapframe at 0xc012df10
-  edi  0x0000807c
-  esi  0x00010094
-  ebp  0xc012df68
-  oesp 0xc012df30
+kernel_execve: pid = 2, name = "badsegment".
+trapframe at 0xc039efb4
+  edi  0x00000000
+  esi  0x00000000
+  ebp  0xafffffa8
+  oesp 0xc039efd4
   ebx  0x00000000
   edx  0x00000000
   ecx  0x00000000
-  eax  0x7fffffff
-  ds   0x----0010
-  es   0x----0010
-  fs   0x----0023
-  gs   0x----0023
-  trap 0x00000000 Divide error
-  err  0x00000000
-  eip  0xc010bb9c
-  cs   0x----0008
-  flag 0x00000082 SF,IOPL=0
+  eax  0x00000028
+  ds   0x----0023
+  es   0x----0023
+  fs   0x----0000
+  gs   0x----0000
+  trap 0x0000000d General Protection
+  err  0x00000028
+  eip  0x00800fd3
+  cs   0x----001b
+  flag 0x00000286 PF,SF,IF,IOPL=0
+  esp  0xafffff90
+  ss   0x----0023
 unhandled trap.
-kernel panic at kern/process/proc.c:486:
-    idleproc exit.
+all user-mode processes have quit.
+init check memory pass.
+kernel panic at kern/process/proc.c:489:
+    initproc exit.
 
 stack trackback:
-ebp:0xc012de44 eip:0xc0100bb8 args:0xc010cb08 0xc012de88 0x000001e6 0xc012deb0
+ebp:0xc0397f88 eip:0xc0100bb8 args:0xc010cb28 0xc0397fcc 0x000001e9 0xc0397fb8
     kern/debug/kdebug.c:351: print_stackframe+22
-ebp:0xc012de74 eip:0xc0100478 args:0xc010eb10 0x000001e6 0xc010eb52 0x00000000
+ebp:0xc0397fb8 eip:0xc0100478 args:0xc010eb30 0x000001e9 0xc010eb82 0x00000000
     kern/debug/panic.c:27: __panic+104
-ebp:0xc012dea4 eip:0xc010a4b8 args:0xfffffff7 0x00010094 0x00010094 0xc012dee8
-    kern/process/proc.c:488: do_exit+49
-ebp:0xc012ded4 eip:0xc0102d19 args:0xc012df10 0xc0395158 0x00000010 0xc012df38
-    kern/trap/trap.c:365: trap_dispatch+1044
-ebp:0xc012df04 eip:0xc0102d92 args:0xc012df10 0x0000807c 0x00010094 0xc012df68
-    kern/trap/trap.c:391: trap+75
-ebp:0xc012df68 eip:0xc010385a args:0xc01b5084 0xc012dfa4 0xc012dfc8 0x00000282
-    kern/trap/trapentry.S:27: <unknown>+0
-ebp:0xc012df88 eip:0xc010b6d9 args:0xc0395008 0x00010094 0x002100a1 0x00000000
-    kern/schedule/sched.c:31: sched_class_pick_next+25
-ebp:0xc012dfb8 eip:0xc010b854 args:0x00000008 0x00000207 0xc012dff8 0xc01000c2
-    kern/schedule/sched.c:88: schedule+56
-ebp:0xc012dfc8 eip:0xc010b3e5 args:0xc010ca5c 0xc010ca40 0x000031e4 0x00000000
-    kern/process/proc.c:920: cpu_idle+23
-ebp:0xc012dff8 eip:0xc01000c2 args:0xc010cc50 0xc010cc58 0xc0100e45 0xc010cc77
-    kern/init/init.c:58: grade_backtrace2+0
+ebp:0xc0397fe8 eip:0xc010a4e3 args:0x00000000 0x00000000 0x00000000 0x00000010
+    kern/process/proc.c:492: do_exit+92
 Welcome to the kernel debug monitor!!
 Type 'help' for a list of commands.
 K> 

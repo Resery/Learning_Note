@@ -75,11 +75,9 @@ stride_enqueue(struct run_queue *rq, struct proc_struct *proc) {
     if (proc->time_slice == 0 || proc->time_slice > rq->max_time_slice) {
       proc->time_slice = rq->max_time_slice;
     }
-    /*
     if (proc->lab6_priority == 0) {
         proc->lab6_priority = 1;
     }
-    */
     proc->rq = rq;
     rq->proc_num ++;
 }
