@@ -329,6 +329,696 @@ page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
 
 修改虚拟地址基址 减去一个 0xC0000000 就等于物理地址了，也就是修改memlayout.h中的`#define KERNBASE 0xC0000000`为`#define KERNBASE 0x0`
 
-## Extend Exercise 1
+## Extend Exercise
 
-## Extend Exercise 2
+**问题：**
+
+**实现buddy system（伙伴系统）分配算法，Buddy System算法把系统中的可用存储空间划分为存储块(Block)来进行管理, 每个存储块的大小必须是2的n次幂(Pow(2, n)), 即1, 2, 4, 8, 16, 32, 64, 128...**
+
+- **参考[伙伴分配器的一个极简实现](http://coolshell.cn/articles/10427.html)， 在ucore中实现buddy system分配算法，要求有比较充分的测试用例说明实现的正确性，需要有设计文档。**
+
+**buddy system算法介绍**
+
+伙伴分配的实质就是一种特殊的**“分离适配”**，即将内存按2的幂进行划分，相当于分离出若干个块大小一致的空闲链表，搜索该链表并给出同需求最佳匹配的大小。其优点是快速搜索合并（O(logN)时间复杂度）以及低外部碎片（最佳适配best-fit）；其缺点是内部碎片，因为按2的幂划分块，如果碰上66单位大小，那么必须划分128单位大小的块。但若需求本身就按2的幂分配，比如可以先分配若干个内存池。
+
+**分配内存对应的操作：**
+
+1. 寻找大小合适的内存块（大于等于所需大小并且最接近2的幂，比如需要27，实际分配32）
+   - 如果找到了，分配给应用程序
+   - 如果没找到，分出合适的内存块
+     - 对半分离出高于所需大小的空闲内存块
+     - 如果分到最低限度，分配这个大小
+     - 回溯到步骤1（寻找合适大小的块）
+     - 重复该步骤直到一个合适的块
+
+**释放内存对应的操作：**
+
+1. 释放该内存块
+   - 寻找相邻的块，看其是否释放了
+   - 如果相邻块也释放了，合并这两个块，重复上述步骤直到遇上未释放的相邻块，或者达到最高上限（即所有内存都释放了）
+
+利用这个图就可以很好的理解上面的两个操作，如下图所示：
+
+![](https://resery-tuchuang.oss-cn-beijing.aliyuncs.com/2020-08-17_22-00-59.png)
+
+**整体思想**
+
+分配器的整体思想是，通过一个数组形式的完全二叉树来监控管理内存，二叉树的节点用于标记相应内存块的使用状态，高层节点对应大的块，低层节点对应小的块，在分配和释放中我们就通过这些节点的标记属性来进行块的分离合并。如图所示，假设总大小为16单位的内存，我们就建立一个深度为5的满二叉树，根节点从数组下标[0]开始，监控大小16的块；它的左右孩子节点下标[1~2]，监控大小8的块；第三层节点下标[3~6]监控大小4的块……依此类推。
+
+![](https://resery-tuchuang.oss-cn-beijing.aliyuncs.com/2020-08-17_22-02-03.png)
+
+在分配阶段，首先要搜索大小适配的块，假设第一次分配3，转换成2的幂是4，我们先要对整个内存进行对半切割，从16切割到4需要两步，那么从下标[0]节点开始深度搜索到下标[3]的节点并将其标记为已分配。第二次再分配3那么就标记下标[4]的节点。第三次分配6，即大小为8，那么搜索下标[2]的节点，因为下标[1]所对应的块被下标[3~4]占用了。
+
+在释放阶段，我们依次释放上述第一次和第二次分配的块，即先释放[3]再释放[4]，当释放下标[4]节点后，我们发现之前释放的[3]是相邻的，于是我们立马将这两个节点进行合并，这样一来下次分配大小8的时候，我们就可以搜索到下标[1]适配了。若进一步释放下标[2]，同[1]合并后整个内存就回归到初始状态。
+
+**代码实现**
+
+1. **宏和数据结构**，在上面的整体思想中，即我们在搜索合适的结点的时候就需要判断该节点是否已经被分配了在被分配了的情况下还剩多少可以用的空间，还需要设置一个表明管理内存的总单元数目，其次就是也需要一个记录已经分配的块的信息的结构，记录着存储已分配块的链表头和自己在二叉树中的位置，以及自己的大小，数据结构就差不多了。然后就是宏，宏对应着就是几个操作，分配的时候会自动把要分配的size扩展成2的整数次方的倍数例如66->128，所以就需要两个宏，一个是检测是不是2的整数次方的倍数，一个是把他扩充成2的整数次方的倍数，在之后搜索适配的块的时候假如当前节点是大于size的但是有可能他的左子结点和右子结点也大于size，所以就需要再和左子结点和右子结点做对比，同时如果找到了要分配的结点，还需要对其父节点进行更新，所以就需要4个宏定义，取左子结点的值，取右子结点的值，取父结点的值，比较大小的MAX。同时为了方便寻找出size对应的大于size的最小的2的整数次方和小于size的最大的2的整数次方，也需要对应设置两个宏。还有两个就是free链表和nr_free，之前的分配算法就已经定义好了的。定义的宏和数据结构如下：
+
+   ```
+   //取左子结点的值
+   #define LEFT_LEAF(index) ((index) * 2 + 1)
+   //取右子结点的值
+   #define RIGHT_LEAF(index) ((index) * 2 + 2)
+   //取父结点的值
+   #define PARENT(index) ( ((index) + 1) / 2 - 1)
+   
+   //判断是否为2的整数次幂
+   #define IS_POWER_OF_2(x) (!((x)&((x)-1)))
+   //判断出最大的
+   #define MAX(a, b) ((a) > (b) ? (a) : (b))
+   
+   //右移n位
+   #define UINT32_SHR_OR(a,n)      ((a)|((a)>>(n)))
+   //大于a的一个最小的2^k
+   #define UINT32_MASK(a)          (UINT32_SHR_OR(UINT32_SHR_OR(UINT32_SHR_OR(UINT32_SHR_OR(UINT32_SHR_OR(a,1),2),4),8),16))    
+   
+   //检测大于a的最小的2^(k-1)是否小于等于a
+   #define UINT32_REMAINDER(a)     ((a)&(UINT32_MASK(a)>>1))
+   //小于a的最大的2^k
+   #define UINT32_ROUND_DOWN(a)    (UINT32_REMAINDER(a)?((a)-UINT32_REMAINDER(a)):(a))
+   
+   //扩展size为2的整数次方
+   static unsigned fixsize(unsigned size) {
+     size |= size >> 1;
+     size |= size >> 2;
+     size |= size >> 4;
+     size |= size >> 8;
+     size |= size >> 16;
+     return size+1;
+   }
+   
+   
+   struct buddy2 {
+     //表明管理内存
+     unsigned size;
+     //记录对应的内存块的空闲单位
+     unsigned longest; 
+   };
+   
+   //存放二叉树的数组，用于内存分配
+   struct buddy2 root[80000];
+   
+   /记录分配块的信息
+   struct allocRecord/
+   {
+    struct Page* base;
+    int offset;
+    size_t nr;//块大小
+   };
+   
+   //存放偏移量的数组
+   struct allocRecord rec[80000];
+   //已分配的块数
+   int nr_block;
+   ```
+
+2. **init**，初始化分为两个free链表的初始化这个初始化和原本算法的一样，其次就是对应内存映射的初始化，内存映射的初始化会提供一个size，前面做的操作和原本的算法一样，不过后面需要多一步对二叉树内容的更新即设置根的size成员变量为提供的size，然后更新每个结点对应的longest的值。对应代码如下：
+
+   ```
+   static void
+   buddy_init()
+   {
+       list_init(&free_list);
+       nr_free=0;
+   }
+   
+   //初始化二叉树上的节点
+   void
+   buddy2_new( int size ) {
+   unsigned node_size;
+    int i;
+    nr_block=0;
+    if (size < 1 || !IS_POWER_OF_2(size))
+            return;
+   
+    root[0].size = size;
+    node_size = size * 2;
+    for (i = 0; i < 2 * size - 1; ++i) {
+        if (IS_POWER_OF_2(i+1))
+        node_size /= 2;
+            root[i].longest = node_size;
+    }
+    return;
+   }
+   
+   //初始化内存映射关系
+   static void
+   buddy_init_memmap(struct Page *base, size_t n)
+   {
+       assert(n>0);
+       struct Page* p=base;
+       for(;p!=base + n;p++)
+       {
+           assert(PageReserved(p));
+           p->flags = 0;
+           p->property = 1;
+           set_page_ref(p, 0);   
+           SetPageProperty(p);
+           list_add_before(&free_list,&(p->page_link));     
+       }
+       nr_free += n;
+       int allocpages=UINT32_ROUND_DOWN(n);
+       buddy2_new(allocpages);
+   }
+   ```
+
+3. **alloc**，对应着就是在二叉树中找到合适的结点然后更新其longest值，再回溯其父节点，再更新其父节点的值，更详细一点的就是先检测输入的size是不是合法的，然后再检测size是不是2的整数次方不是的话就需要把它扩展为2的整数次方，然后就是去寻找合适的结点了，也就是比较longest和size的大小，选择出合适的结点，然后设置该结点的longest为0，然后再向上回溯修改它祖先结点的longest，最后返回合适的结点的位置。知道了位置之后就需要开始设置已分配的页的链表了，这部分的核心内容和原本的几乎无差别，只是增加了一些对于size的检测，代码如下：
+
+   ```
+   //内存分配
+   int
+   buddy2_alloc(struct buddy2* self, int size) {
+     unsigned index = 0;//节点的标号
+     unsigned node_size;
+     unsigned offset = 0;
+   
+     if (self==NULL)//无法分配
+       return -1;
+   
+     if (size <= 0)//分配不合理
+       size = 1;
+     else if (!IS_POWER_OF_2(size))//不为2的幂时，取比size更大的2的n次幂
+       size = fixsize(size);
+   
+     if (self[index].longest < size)//可分配内存不足
+       return -1;
+   
+     for(node_size = self->size; node_size != size; node_size /= 2 ) {
+       if (self[LEFT_LEAF(index)].longest >= size)
+       {
+          if(self[RIGHT_LEAF(index)].longest>=size)
+           {
+              index=self[LEFT_LEAF(index)].longest <= self[RIGHT_LEAF(index)].longest? LEFT_LEAF(index):RIGHT_LEAF(index);
+            //找到两个相符合的节点中内存较小的结点
+           }
+          else
+          {
+            index=LEFT_LEAF(index);
+          }  
+       }
+       else
+         index = RIGHT_LEAF(index);
+     }
+   
+     self[index].longest = 0;//标记节点为已使用
+     offset = (index + 1) * node_size - self->size;
+     while (index) {
+       index = PARENT(index);
+       self[index].longest = 
+         MAX(self[LEFT_LEAF(index)].longest, self[RIGHT_LEAF(index)].longest);
+     }
+   //向上刷新，修改先祖结点的数值
+     return offset;
+   }
+   
+   static struct Page*
+   buddy_alloc_pages(size_t n){
+    assert(n>0);
+    if(n>nr_free)
+        return NULL;
+   
+    struct Page* page = NULL;
+    struct Page* p;
+    int allocpages;
+    list_entry_t *le = &free_list;
+    list_entry_t *len;
+    rec[nr_block].offset = buddy2_alloc(root,n);//记录偏移量
+   
+    for(int i = 0;i < rec[nr_block].offset + 1;i++)
+            le = list_next(le);
+    page = le2page(le,page_link);
+    
+    if(!IS_POWER_OF_2(n))
+            allocpages = fixsize(n);
+    else
+            allocpages = n;
+   
+    //根据需求n得到块大小
+    rec[nr_block].base = page;//记录分配块首页
+    rec[nr_block].nr = allocpages;//记录分配的页数
+    nr_block++;
+        for(int i = 0;i < allocpages;i++)
+        {
+        len = list_next(le);
+        p = le2page(le,page_link);
+        ClearPageProperty(p);
+        le = len;
+        }//修改每一页的状态
+        nr_free -= allocpages;//减去已被分配的页数
+        page->property = n;
+        return page;
+   }
+   
+   ```
+
+4. **free**，在内存释放的free接口，我们只要传入之前分配的内存地址索引，并确保它是有效值。之后就跟alloc做反向回溯，从最后的节点开始一直往上找到longest为0的节点，即当初分配块所适配的大小和位置。**我们将longest恢复到原来满状态的值。继续向上回溯，检查是否存在合并的块，依据就是左右子树longest的值相加是否等于原空闲块满状态的大小，如果能够合并，就将父节点longest标记为相加的和**，同时还涉及已经分配的页的回收，更新一些属性，不过大致思想就是这样的，代码如下：
+
+   ```
+   void
+   buddy_free_pages(struct Page* base, size_t n) {
+     unsigned node_size, index = 0;
+     unsigned left_longest, right_longest;
+     struct buddy2* self = root;
+     
+     list_entry_t *le = list_next(&free_list);
+     int i = 0;
+     for(i = 0;i < nr_block;i++)//找到块
+     {
+       if(rec[i].base == base)
+        break;
+     }
+     int offset = rec[i].offset;
+     int pos = i;//暂存i
+     i = 0;
+     while(i < offset)
+     {
+       le = list_next(le);
+       i++;
+     }
+     int allocpages;
+     if(!IS_POWER_OF_2(n))
+      allocpages = fixsize(n);
+     else
+     {
+        allocpages = n;
+     }
+     assert(self && offset >= 0 && offset < self->size);//是否合法
+     node_size = 1;
+     index = offset + self->size - 1;
+     nr_free += allocpages;//更新空闲页的数量
+     struct Page* p;
+     self[index].longest = allocpages;
+     for(i = 0;i < allocpages;i++)//回收已分配的页
+     {
+        p = le2page(le,page_link);
+        p->flags = 0;
+        p->property = 1;
+        SetPageProperty(p);
+        le = list_next(le);
+     }
+     while (index) {//向上合并，修改先祖节点的记录值
+       index = PARENT(index);
+       node_size *= 2;
+   
+       left_longest = self[LEFT_LEAF(index)].longest;
+       right_longest = self[RIGHT_LEAF(index)].longest;
+       
+       if (left_longest + right_longest == node_size) 
+         self[index].longest = node_size;
+       else
+         self[index].longest = MAX(left_longest, right_longest);
+     }
+     for(i = pos;i < nr_block-1;i++)//清除此次的分配记录
+     {
+       rec[i] = rec[i+1];
+     }
+     nr_block--;//更新分配块数的值
+   }
+   ```
+
+注：这里如果想要使用make qemu进行测试就需要修改一些内容，比如把default_pmm_manager重新设置一下，设置成如下形式
+
+```
+const struct pmm_manager default_pmm_manager = {
+    .name = "buddy_system",
+    .init = buddy_init,
+    .init_memmap = buddy_init_memmap,
+    .alloc_pages = buddy_alloc_pages,
+    .free_pages = buddy_free_pages,
+    .nr_free_pages = buddy_nr_free_pages,
+    .check = buddy_check,
+};
+```
+
+然后注释掉原来的算法的default_pmm_manager然后再make qemu即可
+
+全部代码（包含buddy.c和buddy.h）：
+
+```
+.c:
+/*
+* @Author: resery
+* @Date:   2020-08-17 19:42:14
+* @Last Modified by:   resery
+* @Last Modified time: 2020-08-17 22:31:43
+*/
+#include <pmm.h>
+#include <list.h>
+#include <string.h>
+#include <default_pmm.h>
+#include <buddy.h>
+//来自参考资料的一些宏定义
+#define LEFT_LEAF(index) ((index) * 2 + 1)
+#define RIGHT_LEAF(index) ((index) * 2 + 2)
+#define PARENT(index) ( ((index) + 1) / 2 - 1)
+
+#define IS_POWER_OF_2(x) (!((x)&((x)-1)))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
+#define UINT32_SHR_OR(a,n)      ((a)|((a)>>(n)))//右移n位  
+
+#define UINT32_MASK(a)          (UINT32_SHR_OR(UINT32_SHR_OR(UINT32_SHR_OR(UINT32_SHR_OR(UINT32_SHR_OR(a,1),2),4),8),16))    
+//大于a的一个最小的2^k
+#define UINT32_REMAINDER(a)     ((a)&(UINT32_MASK(a)>>1))
+#define UINT32_ROUND_DOWN(a)    (UINT32_REMAINDER(a)?((a)-UINT32_REMAINDER(a)):(a))//小于a的最大的2^k
+
+static unsigned fixsize(unsigned size) {
+    size |= size >> 1;
+    size |= size >> 2;
+    size |= size >> 4;
+    size |= size >> 8;
+    size |= size >> 16;
+    return size+1;
+}
+
+struct buddy2 {
+    unsigned size;//表明管理内存
+    unsigned longest; 
+};
+struct buddy2 root[80000];//存放二叉树的数组，用于内存分配
+
+free_area_t free_area;
+
+#define free_list (free_area.free_list)
+#define nr_free (free_area.nr_free)
+  
+struct allocRecord//记录分配块的信息
+{
+    struct Page* base;
+    int offset;
+    size_t nr;//块大小
+};
+struct allocRecord rec[80000];//存放偏移量的数组
+int nr_block;//已分配的块数
+
+static void
+buddy_init()
+{
+    list_init(&free_list);
+    nr_free=0;
+}
+
+//初始化二叉树上的节点
+void
+buddy2_new( int size ) {
+unsigned node_size;
+    int i;
+    nr_block=0;
+    if (size < 1 || !IS_POWER_OF_2(size))
+        return;
+
+    root[0].size = size;
+    node_size = size * 2;
+    for (i = 0; i < 2 * size - 1; ++i) {
+    if (IS_POWER_OF_2(i+1))
+        node_size /= 2;
+        root[i].longest = node_size;
+    }
+    return;
+}
+
+//初始化内存映射关系
+static void
+buddy_init_memmap(struct Page *base, size_t n)
+{
+    assert(n>0);
+    struct Page* p=base;
+    for(;p!=base + n;p++)
+    {
+        assert(PageReserved(p));
+        p->flags = 0;
+        p->property = 1;
+        set_page_ref(p, 0);   
+        SetPageProperty(p);
+        list_add_before(&free_list,&(p->page_link));     
+    }
+    nr_free += n;
+    int allocpages=UINT32_ROUND_DOWN(n);
+    buddy2_new(allocpages);
+}
+
+//内存分配
+int
+buddy2_alloc(struct buddy2* self, int size) {
+  unsigned index = 0;//节点的标号
+  unsigned node_size;
+  unsigned offset = 0;
+
+  if (self==NULL)//无法分配
+    return -1;
+
+  if (size <= 0)//分配不合理
+    size = 1;
+  else if (!IS_POWER_OF_2(size))//不为2的幂时，取比size更大的2的n次幂
+    size = fixsize(size);
+
+  if (self[index].longest < size)//可分配内存不足
+    return -1;
+
+  for(node_size = self->size; node_size != size; node_size /= 2 ) {
+    if (self[LEFT_LEAF(index)].longest >= size)
+    {
+       if(self[RIGHT_LEAF(index)].longest>=size)
+        {
+           index=self[LEFT_LEAF(index)].longest <= self[RIGHT_LEAF(index)].longest? LEFT_LEAF(index):RIGHT_LEAF(index);
+         //找到两个相符合的节点中内存较小的结点
+        }
+       else
+       {
+         index=LEFT_LEAF(index);
+       }  
+    }
+    else
+      index = RIGHT_LEAF(index);
+  }
+
+  self[index].longest = 0;//标记节点为已使用
+  offset = (index + 1) * node_size - self->size;
+  while (index) {
+    index = PARENT(index);
+    self[index].longest = 
+      MAX(self[LEFT_LEAF(index)].longest, self[RIGHT_LEAF(index)].longest);
+  }
+//向上刷新，修改先祖结点的数值
+  return offset;
+}
+
+static struct Page*
+buddy_alloc_pages(size_t n){
+    assert(n>0);
+    if(n>nr_free)
+        return NULL;
+
+    struct Page* page = NULL;
+    struct Page* p;
+    int allocpages;
+    list_entry_t *le = &free_list;
+    list_entry_t *len;
+    rec[nr_block].offset = buddy2_alloc(root,n);//记录偏移量
+
+    for(int i = 0;i < rec[nr_block].offset + 1;i++)
+        le = list_next(le);
+    page = le2page(le,page_link);
+    
+    if(!IS_POWER_OF_2(n))
+        allocpages = fixsize(n);
+    else
+        allocpages = n;
+
+    //根据需求n得到块大小
+    rec[nr_block].base = page;//记录分配块首页
+    rec[nr_block].nr = allocpages;//记录分配的页数
+    nr_block++;
+    for(int i = 0;i < allocpages;i++)
+    {
+        len = list_next(le);
+        p = le2page(le,page_link);
+        ClearPageProperty(p);
+        le = len;
+    }//修改每一页的状态
+    nr_free -= allocpages;//减去已被分配的页数
+    page->property = n;
+    return page;
+}
+
+void
+buddy_free_pages(struct Page* base, size_t n) {
+  unsigned node_size, index = 0;
+  unsigned left_longest, right_longest;
+  struct buddy2* self = root;
+  
+  list_entry_t *le = list_next(&free_list);
+  int i = 0;
+  for(i = 0;i < nr_block;i++)//找到块
+  {
+    if(rec[i].base == base)
+     break;
+  }
+  int offset = rec[i].offset;
+  int pos = i;//暂存i
+  i = 0;
+  while(i < offset)
+  {
+    le = list_next(le);
+    i++;
+  }
+  int allocpages;
+  if(!IS_POWER_OF_2(n))
+   allocpages = fixsize(n);
+  else
+  {
+     allocpages = n;
+  }
+  assert(self && offset >= 0 && offset < self->size);//是否合法
+  node_size = 1;
+  index = offset + self->size - 1;
+  nr_free += allocpages;//更新空闲页的数量
+  struct Page* p;
+  self[index].longest = allocpages;
+  for(i = 0;i < allocpages;i++)//回收已分配的页
+  {
+     p = le2page(le,page_link);
+     p->flags = 0;
+     p->property = 1;
+     SetPageProperty(p);
+     le = list_next(le);
+  }
+  while (index) {//向上合并，修改先祖节点的记录值
+    index = PARENT(index);
+    node_size *= 2;
+
+    left_longest = self[LEFT_LEAF(index)].longest;
+    right_longest = self[RIGHT_LEAF(index)].longest;
+    
+    if (left_longest + right_longest == node_size) 
+      self[index].longest = node_size;
+    else
+      self[index].longest = MAX(left_longest, right_longest);
+  }
+  for(i = pos;i < nr_block-1;i++)//清除此次的分配记录
+  {
+    rec[i] = rec[i+1];
+  }
+  nr_block--;//更新分配块数的值
+}
+
+static size_t
+buddy_nr_free_pages(void) {
+    return nr_free;
+}
+
+static void
+buddy_check(void) {
+    struct Page *p0, *A, *B,*C,*D;
+    p0 = A = B = C = D =NULL;
+
+    assert((p0 = alloc_page()) != NULL);
+    assert((A = alloc_page()) != NULL);
+    assert((B = alloc_page()) != NULL);
+
+    assert(p0 != A && p0 != B && A != B);
+    assert(page_ref(p0) == 0 && page_ref(A) == 0 && page_ref(B) == 0);
+    free_page(p0);
+    free_page(A);
+    free_page(B);
+    
+    A=alloc_pages(500);
+    B=alloc_pages(500);
+    cprintf("A %p\n",A);
+    cprintf("B %p\n",B);
+    free_pages(A,250);
+    free_pages(B,500);
+    free_pages(A+250,250);
+    
+    p0=alloc_pages(1024);
+    cprintf("p0 %p\n",p0);
+    assert(p0 == A);
+    //以下是根据链接中的样例测试编写的
+    A=alloc_pages(70);  
+    B=alloc_pages(35);
+    assert(A+128==B);//检查是否相邻
+    cprintf("A %p\n",A);
+    cprintf("B %p\n",B);
+    C=alloc_pages(80);
+    assert(A+256==C);//检查C有没有和A重叠
+    cprintf("C %p\n",C);
+    free_pages(A,70);//释放A
+    cprintf("B %p\n",B);
+    D=alloc_pages(60);
+    cprintf("D %p\n",D);
+    assert(B+64==D);//检查B，D是否相邻
+    free_pages(B,35);
+    cprintf("D %p\n",D);
+    free_pages(D,60);
+    cprintf("C %p\n",C);
+    free_pages(C,80);
+    free_pages(p0,1000);//全部释放
+}
+
+const struct pmm_manager default_pmm_manager = {
+    .name = "buddy_system",
+    .init = buddy_init,
+    .init_memmap = buddy_init_memmap,
+    .alloc_pages = buddy_alloc_pages,
+    .free_pages = buddy_free_pages,
+    .nr_free_pages = buddy_nr_free_pages,
+    .check = buddy_check,
+};
+
+-------------------------------------------------------------------------------------------------
+.h:
+#ifndef __KERN_MM_DEFAULT_PMM_H__
+#define  __KERN_MM_DEFAULT_PMM_H__
+
+#include <pmm.h>
+
+extern const struct pmm_manager default_pmm_manager;
+
+#endif /* ! __KERN_MM_DEFAULT_PMM_H__ */
+```
+
+测试结果：
+
+```
+(THU.CST) os is loading ...
+
+Special kernel symbols:
+  entry  0xc0100036 (phys)
+  etext  0xc010721c (phys)
+  edata  0xc011d000 (phys)
+  end    0xc02a49e0 (phys)
+Kernel executable memory footprint: 1683KB
+ebp:0xc0119f38 eip:0xc0100aa4 args:0x00010094 0x00010094 0xc0119f68 0xc01000c8
+    kern/debug/kdebug.c:309: print_stackframe+22
+ebp:0xc0119f48 eip:0xc0100da9 args:0x00000000 0x00000000 0x00000000 0xc0119fb8
+    kern/debug/kmonitor.c:130: mon_backtrace+11
+ebp:0xc0119f68 eip:0xc01000c8 args:0x00000000 0xc0119f90 0xffff0000 0xc0119f94
+    kern/init/init.c:50: grade_backtrace2+34
+ebp:0xc0119f88 eip:0xc01000f2 args:0x00000000 0xffff0000 0xc0119fb4 0x0000002b
+    kern/init/init.c:55: grade_backtrace1+39
+ebp:0xc0119fa8 eip:0xc0100111 args:0x00000000 0xc0100036 0xffff0000 0x0000001d
+    kern/init/init.c:60: grade_backtrace0+24
+ebp:0xc0119fc8 eip:0xc0100137 args:0xc010723c 0xc0107220 0x001879e0 0x00000000
+    kern/init/init.c:65: grade_backtrace+35
+ebp:0xc0119ff8 eip:0xc010008b args:0xc0107430 0xc0107438 0xc0100d31 0xc0107457
+    kern/init/init.c:31: kern_init+85
+memory management: buddy_system
+e820map:
+  memory: 0009fc00, [00000000, 0009fbff], type = 1.可以使用的物理内存空间
+  memory: 00000400, [0009fc00, 0009ffff], type = 2.不能使用的物理内存空间
+  memory: 00010000, [000f0000, 000fffff], type = 2.不能使用的物理内存空间
+  memory: 07ee0000, [00100000, 07fdffff], type = 1.可以使用的物理内存空间
+  memory: 00020000, [07fe0000, 07ffffff], type = 2.不能使用的物理内存空间
+  memory: 00040000, [fffc0000, ffffffff], type = 2.不能使用的物理内存空间
+A 0xc02a9164
+B 0xc02ab964
+p0 0xc02a9164
+A 0xc02ae164
+B 0xc02aeb64
+C 0xc02af564
+B 0xc02aeb64
+D 0xc02af064
+D 0xc02af064
+C 0xc02af564
+```
