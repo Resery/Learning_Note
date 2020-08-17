@@ -2,25 +2,25 @@
 
 Special kernel symbols:
   entry  0xc0100036 (phys)
-  etext  0xc010649a (phys)
-  edata  0xc011b000 (phys)
-  end    0xc011bfa8 (phys)
-Kernel executable memory footprint: 112KB
-ebp:0xc0117f38 eip:0xc0100aa4 args:0x00010094 0x00010094 0xc0117f68 0xc01000c8
+  etext  0xc0107241 (phys)
+  edata  0xc011d000 (phys)
+  end    0xc02a49e0 (phys)
+Kernel executable memory footprint: 1683KB
+ebp:0xc0119f38 eip:0xc0100aa4 args:0x00010094 0x00010094 0xc0119f68 0xc01000c8
     kern/debug/kdebug.c:309: print_stackframe+22
-ebp:0xc0117f48 eip:0xc0100da9 args:0x00000000 0x00000000 0x00000000 0xc0117fb8
+ebp:0xc0119f48 eip:0xc0100da9 args:0x00000000 0x00000000 0x00000000 0xc0119fb8
     kern/debug/kmonitor.c:130: mon_backtrace+11
-ebp:0xc0117f68 eip:0xc01000c8 args:0x00000000 0xc0117f90 0xffff0000 0xc0117f94
+ebp:0xc0119f68 eip:0xc01000c8 args:0x00000000 0xc0119f90 0xffff0000 0xc0119f94
     kern/init/init.c:50: grade_backtrace2+34
-ebp:0xc0117f88 eip:0xc01000f2 args:0x00000000 0xffff0000 0xc0117fb4 0x0000002a
+ebp:0xc0119f88 eip:0xc01000f2 args:0x00000000 0xffff0000 0xc0119fb4 0x0000002b
     kern/init/init.c:55: grade_backtrace1+39
-ebp:0xc0117fa8 eip:0xc0100111 args:0x00000000 0xc0100036 0xffff0000 0x0000001d
+ebp:0xc0119fa8 eip:0xc0100111 args:0x00000000 0xc0100036 0xffff0000 0x0000001d
     kern/init/init.c:60: grade_backtrace0+24
-ebp:0xc0117fc8 eip:0xc0100137 args:0xc01064bc 0xc01064a0 0x00000fa8 0x00000000
+ebp:0xc0119fc8 eip:0xc0100137 args:0xc010727c 0xc0107260 0x001879e0 0x00000000
     kern/init/init.c:65: grade_backtrace+35
-ebp:0xc0117ff8 eip:0xc010008b args:0xc01066b0 0xc01066b8 0xc0100d31 0xc01066d7
+ebp:0xc0119ff8 eip:0xc010008b args:0xc0107470 0xc0107478 0xc0100d31 0xc0107497
     kern/init/init.c:31: kern_init+85
-memory management: default_pmm_manager
+memory management: buddy_system
 e820map:
   memory: 0009fc00, [00000000, 0009fbff], type = 1.可以使用的物理内存空间
   memory: 00000400, [0009fc00, 0009ffff], type = 2.不能使用的物理内存空间
@@ -28,34 +28,14 @@ e820map:
   memory: 07ee0000, [00100000, 07fdffff], type = 1.可以使用的物理内存空间
   memory: 00020000, [07fe0000, 07ffffff], type = 2.不能使用的物理内存空间
   memory: 00040000, [fffc0000, ffffffff], type = 2.不能使用的物理内存空间
+A 0xc02a9164
+B 0xc02ab964
+p0 0xc02a9164
+A 0xc02ae164
+B 0xc02aeb64
+C 0xc02af564
+B 0xc02aeb64
+D 0xc02af064
+D 0xc02af064
+C 0xc02af564
 check_alloc_page() succeeded!
-check_pgdir() succeeded!
-check_boot_pgdir() succeeded!
--------------------- BEGIN --------------------
-PDE(0e0) c0000000-f8000000 38000000 urw
-  |-- PTE(38000) c0000000-f8000000 38000000 -rw
-PDE(001) fac00000-fb000000 00400000 -rw
-  |-- PTE(000e0) faf00000-fafe0000 000e0000 urw
-  |-- PTE(00001) fafeb000-fafec000 00001000 -rw
---------------------- END ---------------------
-++ setup timer interrupts
-100 ticks
-End of Test.
-kernel panic at kern/trap/trap.c:18:
-    EOT: kernel seems ok.
-stack trackback:
-ebp:0xc0117ee0 eip:0xc0100aa4 args:0xc0106568 0xc0117f24 0x00000012 0xc0117f5c
-    kern/debug/kdebug.c:309: print_stackframe+22
-ebp:0xc0117f10 eip:0xc010045c args:0xc010684e 0x00000012 0xc0106838 0x00000003
-    kern/debug/panic.c:27: __panic+104
-ebp:0xc0117f30 eip:0xc01018e4 args:0xc0117f68 0xc0100298 0xc0100249 0xc0117f5c
-    kern/trap/trap.c:36: idt_init+0
-ebp:0xc0117f60 eip:0xc0101eb3 args:0xc0117f8c 0xc01002bb 0xc01067c6 0xc0117fa4
-    kern/trap/trap.c:224: trap_dispatch+111
-ebp:0xc0117f80 eip:0xc01021ad args:0xc0117f8c 0x0000807c 0x00010094 0xc0117ff8
-    kern/trap/trap.c:0: trap+17
-ebp:0xc0117ff8 eip:0xc0102c38 args:0xc01066b0 0xc01066b8 0xc0100d31 0xc01066d7
-    kern/trap/trapentry.S:33: <unknown>+0
-Welcome to the kernel debug monitor!!
-Type 'help' for a list of commands.
-K> 

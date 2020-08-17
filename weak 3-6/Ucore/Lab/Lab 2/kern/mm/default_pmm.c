@@ -309,7 +309,7 @@ default_check(void) {
     assert(count == 0);
     assert(total == 0);
 }
-
+/*
 const struct pmm_manager default_pmm_manager = {
     .name = "default_pmm_manager",
     .init = default_init,
@@ -319,4 +319,5 @@ const struct pmm_manager default_pmm_manager = {
     .nr_free_pages = default_nr_free_pages,
     .check = default_check,
 };
+*/
 
