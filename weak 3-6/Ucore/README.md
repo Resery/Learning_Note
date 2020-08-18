@@ -20,7 +20,8 @@ grade截图：
 
 ## Lab 3
 
-包含虚拟内存管理，page fault异常处理方法，页替换算法
+包含虚拟内存管理，page fault异常处理方法，页替换算法，lab3思维导图如下：
+![](Picture/lab3.png)
 
 grade截图：
 ![](Picture/lab3grade.png)

@@ -152,9 +152,116 @@ bad_fork_cleanup_proc:
 
 他们的作用是来屏蔽中断和恢复中断，在进程切换的时候如果被另一个中断打断了，就会导致进程切换未完成，就可能会导致内核在处理完中断之后，转而去执行的就不是预想的地方，而是某些不可执行的地方，导致崩溃。
 
-## Extend Exercise 1：
+## Extend Exercise：
 
 **问题：**
 
 **实现支持任意大小的内存分配算法**
+
+**这不是本实验的内容，其实是上一次实验内存的扩展，但考虑到现在的slab算法比较复杂，有必要实现一个比较简单的任意大小内存分配算法。可参考本实验中的slab如何调用基于页的内存分配算法（注意，不是要你关注slab的具体实现）来实现first-fit/best-fit/worst-fit/buddy等支持任意大小的内存分配算法。。**
+
+**【注意】下面是相关的Linux实现文档，供参考**
+
+**SLOB**
+
+**http://en.wikipedia.org/wiki/SLOB http://lwn.net/Articles/157944/**
+
+**SLAB**
+
+**https://www.ibm.com/developerworks/cn/linux/l-linux-slab-allocator/**
+
+### 解：
+
+内容来自：[https://github.com/PKUanonym/REKCARC-TSC-UHT/blob/master/%E5%A4%A7%E4%B8%89%E4%B8%8B/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/hw/2017/2014011330_738793_537703740_lab4-2014011330/lab4-challenge-2014011330.md](https://github.com/PKUanonym/REKCARC-TSC-UHT/blob/master/大三下/操作系统/hw/2017/2014011330_738793_537703740_lab4-2014011330/lab4-challenge-2014011330.md)
+
+稍加修改
+
+实现思路：
+
+首先确定所实现`kmalloc`在uCore内存管理中所处的地位，才能更好地理解函数调用关系。
+
+在内核中，uCore的内存管理分为物理内存管理`pmm`和虚拟内存管理`vmm`。虚拟内存管理模块只负责管理页式地址映射关系，不负责具体的内存分配。而物理内存管理模块`pmm`不仅要管理连续的物理内存，还要能够向上提供分配内存的接口`alloc_pages`，分配出的物理内存区域可以转换为内核态可访问的区域（只要偏移`KERNBASE`）即可；也可以做地址映射转换给用户态程序使用。
+
+但是，`alloc_pages`仅仅提供以页为粒度的物理内存分配，在uCore内核中，会频繁分配小型动态的数据结构（诸如`vma_struct`和`proc_struct`），这样以页为粒度进行分配既不节省空间，速度还慢，需要有一个接口能够提供更加细粒度的内存分配与释放工作，这就是slab和slob出现的原因：他们是一个中间件，底层调用`alloc_pages`接口，上层提供`kmalloc`接口，内部通过一系列机制管理页和内存小块的关系。需要注意的一点是：用户态的`libc`提供的`malloc`接口并不是利用了与`kmalloc`相同的机制，而是由`libc`自己管理的一套小型内存分配机制。（回忆汇编课程上讲过使用`brk`系统调用完成的内存申请实际上是以页为粒度的）
+
+仔细阅读Lab4中原有的slob代码，在每个小块内存的头部都存放了该块的大小和下一个空闲块的地址。`kmalloc`函数会首先判断需要分配的空间是否跨页，如果是则直接调用`alloc_pages`进行分配，否则就调用`slob_alloc`进行分配。巧妙的一点是，为了管理所有申请的连续物理空间页，Lab4建立了`bigblock`这一数据结构，而这个数据结构自身所占的内存空间如何分配呢？结论是`slob_alloc`！Lab4就这样将二者耦合到了一起。
+
+具体到`Best-Fit`算法的实现，实际很简单，仅仅需要在扫描空闲链表的时候动态记录与更新最好的块的地址即可（这里是因为best-fit管理的空闲链表是按大小顺序排的，所以说只需要更新最好的块的地址即可），扫描完成之后，再选出刚刚找到的最合适的空间进行分配即可。无论是`First-Fit`、`Best-Fit`还是`Worst-Fit`，其释放的合并策略都是相同的，因此只需要修改`slob_alloc`函数即可。
+
+Best-Fit算法的更具体一点的内容就是，他对应的空闲链表是按大小顺序排的，而first-fit是按地址排的，best-fit会在链表中找到空闲块大小是大于分配块的大小的所有快中最小的哪一个块，这样就可以避免内部碎片的麻烦，同时在释放的时候也会进行合并来保证当有大的块申请的时候也会有大的块与之对应。
+
+下面的代码主要是分成了两种情况，一种是正好有大小为分配的size的空闲块，一种是大小比要分配的size的大一点的空闲块，针对两种情况做出不同的反应，第一种情况就会直接返回这个块的地址意思就是这个块被分配了，第二种情况就会继续在链表中寻找，寻找出比size大的空闲块中的最小的块，一直找到链表尾部，然后检测是否找到了如果说找到了就需要对这个块进行切割，切割完成之后就返回这个块，如果说没有找到合适的块，就会先检测一下是不是size过大，比如说size是4k（一个页的大小）那就直接返回0，如果不是因为过大，就去调用默认的分配算法如果说默认的分配算法返回的还是null那就证明没有大于size的内存块了，如果说调用默认的分配算法返回的不是空那就代表还是有的，就看看可不可以把空闲块合并一下
+
+代码如下：
+
+```
+static void *best_fit_alloc(size_t size, gfp_t gfp, int align)
+{
+  assert( (size + SLOB_UNIT) < PAGE_SIZE );
+  // This best fit allocator does not consider situations where align != 0
+  assert(align == 0);
+  int units = SLOB_UNITS(size);
+
+  unsigned long flags;
+  spin_lock_irqsave(&slob_lock, flags);
+
+  slob_t *prev = slobfree, *cur = slobfree->next;
+  int find_available = 0;
+  int best_frag_units = 100000;
+  slob_t *best_slob = NULL;
+  slob_t *best_slob_prev = NULL;
+
+  for (; ; prev = cur, cur = cur->next) {
+    if (cur->units >= units) {
+      // Find available one.
+      if (cur->units == units) {
+        // If found a perfect one...
+        prev->next = cur->next;
+        slobfree = prev;
+        spin_unlock_irqrestore(&slob_lock, flags);
+        // That's it!
+        return cur;
+      }
+      else {
+        // This is not a prefect one.
+        if (cur->units - units < best_frag_units) {
+          // This seems to be better than previous one.
+          best_frag_units = cur->units - units;
+          best_slob = cur;
+          best_slob_prev = prev;
+          find_available = 1;
+        }
+      }
+
+    }
+
+    // Get to the end of iteration.
+    if (cur == slobfree) {
+      if (find_available) {
+        // use the found best fit.
+        best_slob_prev->next = best_slob + units;
+        best_slob_prev->next->units = best_frag_units;
+        best_slob_prev->next->next = best_slob->next;
+        best_slob->units = units;
+        slobfree = best_slob_prev;
+        spin_unlock_irqrestore(&slob_lock, flags);
+        // That's it!
+        return best_slob;
+      }
+      // Initially, there's no available arena. So get some.
+      spin_unlock_irqrestore(&slob_lock, flags);
+      if (size == PAGE_SIZE) return 0;
+
+      cur = (slob_t *)__slob_get_free_page(gfp);
+      if (!cur) return 0;
+
+      slob_free(cur, PAGE_SIZE);
+      spin_lock_irqsave(&slob_lock, flags);
+      cur = slobfree;
+    }
+  }
+}
+```
+
+
 
