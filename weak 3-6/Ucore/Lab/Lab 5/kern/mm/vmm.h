@@ -6,6 +6,8 @@
 #include <memlayout.h>
 #include <sync.h>
 
+#define COPY_ON_WRITE
+
 //pre define
 struct mm_struct;
 

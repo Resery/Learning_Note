@@ -7,7 +7,7 @@ main(void) {
     cprintf("I am the parent. Forking the child...\n");
     if ((pid = fork()) == 0) {
         cprintf("I am the child. spinning ...\n");
-        //while (1);
+        while (1);
     }
     cprintf("I am the parent. Running the child...\n");
 

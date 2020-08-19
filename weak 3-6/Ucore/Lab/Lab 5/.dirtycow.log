@@ -2,10 +2,10 @@
 
 Special kernel symbols:
   entry  0xc0100036 (phys)
-  etext  0xc010c30e (phys)
-  edata  0xc019f000 (phys)
-  end    0xc01a21c4 (phys)
-Kernel executable memory footprint: 649KB
+  etext  0xc010c4df (phys)
+  edata  0xc01a7000 (phys)
+  end    0xc01aa1c4 (phys)
+Kernel executable memory footprint: 681KB
 ebp:0xc012af38 eip:0xc0100bb3 args:0x00010094 0x00010094 0xc012af68 0xc01000df
     kern/debug/kdebug.c:351: print_stackframe+22
 ebp:0xc012af48 eip:0xc0100eb8 args:0x00000000 0x00000000 0x00000000 0xc012afb8
@@ -16,9 +16,9 @@ ebp:0xc012af88 eip:0xc0100109 args:0x00000000 0xffff0000 0xc012afb4 0x0000002a
     kern/init/init.c:64: grade_backtrace1+39
 ebp:0xc012afa8 eip:0xc0100128 args:0x00000000 0xc0100036 0xffff0000 0x0000001d
     kern/init/init.c:69: grade_backtrace0+24
-ebp:0xc012afc8 eip:0xc010014e args:0xc010c33c 0xc010c320 0x000031c4 0x00000000
+ebp:0xc012afc8 eip:0xc010014e args:0xc010c4fc 0xc010c4e0 0x000031c4 0x00000000
     kern/init/init.c:74: grade_backtrace+35
-ebp:0xc012aff8 eip:0xc010008b args:0xc010c530 0xc010c538 0xc0100e40 0xc010c557
+ebp:0xc012aff8 eip:0xc010008b args:0xc010c6f0 0xc010c6f8 0xc0100e40 0xc010c717
     kern/init/init.c:35: kern_init+85
 memory management: default_pmm_manager
 e820map:
@@ -47,7 +47,7 @@ check_vmm() succeeded.
 ide 0:      10000(sectors), 'QEMU HARDDISK'.
 ide 1:     262144(sectors), 'QEMU HARDDISK'.
 SWAP: manager = fifo swap manager
-BEGIN check_swap: count 1, total 31835
+BEGIN check_swap: count 1, total 31827
 setup Page Table for vaddr 0X1000, so alloc a page
 setup Page Table vaddr 0~4MB OVER!
 set up init env for check_swap begin!
@@ -91,24 +91,116 @@ swap_in: load disk swap entry 2 with swap_page in vadr 0x1000
 count is 0, total is 5
 check_swap() succeeded!
 ++ setup timer interrupts
-kernel_execve: pid = 2, name = "exit".
-I am the parent. Forking the child...
-I am parent, fork a child pid 3
-I am the parent, waiting now..
-I am the child.
-waitpid 3 ok.
-exit pass.
+kernel_execve: pid = 2, name = "dirtycow".
+
+
+
+dirty cow test
+
+
+
+0002: I am ''
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault: reused
+0004: I am '1'
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault: reused
+0003: I am '0'
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault: reused
+0008: I am '01'
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault: reused
+0007: I am '00'
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault: reused
+0006: I am '11'
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault: reused
+0005: I am '10'
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault: reused
+0010: I am '101'
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault: reused
+000f: I am '100'
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault: reused
+000e: I am '111'
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault: reused
+000d: I am '110'
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault: reused
+000c: I am '001'
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault: reused
+000b: I am '000'
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault: reused
+000a: I am '011'
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault: reused
+0009: I am '010'
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault: reused
+0020: I am '0101'
+Handled one COW fault: reused
+001f: I am '0100'
+Handled one COW fault: reused
+001e: I am '0111'
+Handled one COW fault: reused
+001d: I am '0110'
+Handled one COW fault: reused
+001c: I am '0001'
+Handled one COW fault: reused
+001b: I am '0000'
+Handled one COW fault: reused
+001a: I am '0011'
+Handled one COW fault: reused
+0019: I am '0010'
+Handled one COW fault: reused
+0018: I am '1101'
+Handled one COW fault: reused
+0017: I am '1100'
+Handled one COW fault: reused
+0016: I am '1111'
+Handled one COW fault: reused
+0015: I am '1110'
+Handled one COW fault: reused
+0014: I am '1001'
+Handled one COW fault: reused
+0013: I am '1000'
+Handled one COW fault: reused
+0012: I am '1011'
+Handled one COW fault: reused
+0011: I am '1010'
 all user-mode processes have quit.
 init check memory pass.
 kernel panic at kern/process/proc.c:471:
     initproc exit.
 
 stack trackback:
-ebp:0xc0384f88 eip:0xc0100bb3 args:0xc010c3e8 0xc0384fcc 0x000001d7 0xc0384fb8
+ebp:0xc038cf88 eip:0xc0100bb3 args:0xc010c5a8 0xc038cfcc 0x000001d7 0xc038cfb8
     kern/debug/kdebug.c:351: print_stackframe+22
-ebp:0xc0384fb8 eip:0xc0100473 args:0xc010e410 0x000001d7 0xc010e462 0x00000000
+ebp:0xc038cfb8 eip:0xc0100473 args:0xc010e68c 0x000001d7 0xc010e6de 0x00000000
     kern/debug/panic.c:27: __panic+104
-ebp:0xc0384fe8 eip:0xc010a46c args:0x00000000 0x00000000 0x00000000 0x00000010
+ebp:0xc038cfe8 eip:0xc010a63d args:0x00000000 0x00000000 0x00000000 0x00000010
     kern/process/proc.c:474: do_exit+92
 Welcome to the kernel debug monitor!!
 Type 'help' for a list of commands.

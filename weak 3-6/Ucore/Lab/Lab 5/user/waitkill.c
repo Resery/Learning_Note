@@ -22,10 +22,10 @@ loop(void) {
 void
 work(void) {
     cprintf("child 2.\n");
-    //do_yield();
+    do_yield();
     if (kill(parent) == 0) {
         cprintf("kill parent ok.\n");
-        //do_yield();
+        do_yield();
         if (kill(pid1) == 0) {
             cprintf("kill child1 ok.\n");
             exit(0);

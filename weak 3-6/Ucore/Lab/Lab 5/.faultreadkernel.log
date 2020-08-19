@@ -2,7 +2,7 @@
 
 Special kernel symbols:
   entry  0xc0100036 (phys)
-  etext  0xc010c313 (phys)
+  etext  0xc010c30e (phys)
   edata  0xc019f000 (phys)
   end    0xc01a21c4 (phys)
 Kernel executable memory footprint: 649KB
@@ -124,9 +124,9 @@ ebp:0xc038bf48 eip:0xc0100473 args:0xc010c7ae 0x00000110 0xc010ca50 0xfffffffd
     kern/debug/panic.c:27: __panic+104
 ebp:0xc038bf78 eip:0xc0102a24 args:0xc038bfb4 0x00000000 0x0080026d 0x0000001b
     kern/trap/trap.c:278: trap_dispatch+292
-ebp:0xc038bfa8 eip:0xc0102dd9 args:0xc038bfb4 0x00000000 0x00000000 0xafffffa8
+ebp:0xc038bfa8 eip:0xc0102dd4 args:0xc038bfb4 0x00000000 0x00000000 0xafffffa8
     kern/trap/trap.c:381: trap+75
-ebp:0xafffffa8 eip:0xc01038a1 args:0x00000000 0x00000000 0x00000000 0x00000000
+ebp:0xafffffa8 eip:0xc010389c args:0x00000000 0x00000000 0x00000000 0x00000000
     kern/trap/trapentry.S:27: <unknown>+0
 ebp:0xafffffd8 eip:0x00800350 args:0x00000000 0x00000000 0x00000000 0x00000000
     user/libs/umain.c:7: umain+11

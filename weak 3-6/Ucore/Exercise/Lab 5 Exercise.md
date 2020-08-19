@@ -93,7 +93,7 @@ exit：在执行了exit系统调用之后，会执行正常的中断处理流程
                      | --- (子进程唤醒，exit系统调用) <--- [sleeping]  <---|
 ```
 
-## Exetend Exercise 1
+## Exetend Exercise
 
 **问题：**
 
@@ -106,3 +106,117 @@ exit：在执行了exit系统调用之后，会执行正常的中断处理流程
 **这是一个big challenge.**
 
 ### 解：
+
+COW(写时复制)：是为了增加效率所做的操作，如果说没有COW那么在fork进程的时候，子进程会复制父进程的代码段数据段等内容，占用新的内存。如果说使用上面的方法那么假如fork了很多个进程那么内存时远远不够用的，所以COW的思想就是fork出来的子进程和父进程共享一个物理内存，但是如果这个子进程要修改某处的内容，这时候才进行复制，复制出一个新的段（比如说修改了代码段就复制代码段，其余的数据段等不会复制），这样就会大大的增加了效率也减少了内存开销。
+
+对应着我们的代码实现，由于需要实现COW这个异常的处理，那就需要在fork进程的时候将新进程和旧进程指向的物理内存对应的页表项设置为只读，如果说我们写了只读的内存就会触发缺页异常，进而处理这个异常。现在是可以触发这个异常，但是还是没办法识别这个异常，想要识别这个异常就需要设置一个判断，即检测对应的页表项的只读位是否为1，为1则代表时COW异常，否则就是别的原因引起的缺页异常。到现在为止，触发和识别都已经做好了，剩下的就是实现COW了，首先我们会判断ref是否为1，判断ref是否为1就是判断有几个虚拟页映射到了这个物理内存，如果说只有父进程没有子进程就是为1，也就代表不需要再保护父进程的内存空间为只读的了就恢复父进程的内存空间为可读可写，如果说ref不为1也就代表现在是有子进程的并且写了只读的内存空间，就需要进行复制了，然后设置复制的子进程是可读可写的，具体代码如下：
+
+```
+pmm.c:
+uint32_t perm = (*ptep & (PTE_U | PTE_P));
+struct Page *page = pte2page(*ptep);
+assert(page != NULL);
+// Set the new mm to be readonly.
+page_insert(to, page, start, perm);
+// Set the old mm to be readonly
+page_insert(from, page, start, perm);
+
+vmm.c:
+else {
+    /*LAB3 EXERCISE 2: YOUR CODE
+    * Now we think this pte is a  swap entry, we should load data from disk to a page with phy addr,
+    * and map the phy addr with logical addr, trigger swap manager to record the access situation of this page.
+    *
+    *  Some Useful MACROs and DEFINEs, you can use them in below implementation.
+    *  MACROs or Functions:
+    *    swap_in(mm, addr, &page) : alloc a memory page, then according to the swap entry in PTE for addr,
+    *                               find the addr of disk page, read the content of disk page into this memroy page
+    *    page_insert ： build the map of phy addr of an Page with the linear addr la
+    *    swap_map_swappable ： set the page swappable
+    */
+    /*
+     * LAB5 CHALLENGE ( the implmentation Copy on Write)
+        There are 2 situlations when code comes here.
+          1) *ptep & PTE_P == 1, it means one process try to write a readonly page. 
+             If the vma includes this addr is writable, then we can set the page writable by rewrite the *ptep.
+             This method could be used to implement the Copy on Write (COW) thchnology(a fast fork process method).
+          2) *ptep & PTE_P == 0 & but *ptep!=0, it means this pte is a  swap entry.
+             We should add the LAB3's results here.
+     */
+        if (*ptep & PTE_P) {
+            // Read-only possibly caused by COW.
+            if (vma->vm_flags & VM_WRITE) {
+                // If ref of pages == 1, it is not shared, just make pte writable.
+                // else, alloc a new page, copy content and reset pte.
+                // also, remember to decrease ref of that page!
+                struct Page* p = pte2page(*ptep);
+                assert(p != NULL);
+                assert(p->ref > 0);
+                if (p->ref > 1) {
+                    struct Page *npage = alloc_page();
+                    assert(npage != NULL);
+                    void * src_kvaddr = page2kva(p);
+                    void * dst_kvaddr = page2kva(npage);
+                    memcpy(dst_kvaddr, src_kvaddr, PGSIZE);
+                    // addr already ROUND down.
+                    page_insert(mm->pgdir, npage, addr, ((*ptep) & PTE_USER) | PTE_W);
+                    // page_ref_dec(p);
+                    cprintf("Handled one COW fault at %x: copied\n", addr);
+                }
+                else {
+                    page_insert(mm->pgdir, p, addr, ((*ptep) & PTE_USER) | PTE_W);
+                    cprintf("Handled one COW fault: reused\n");
+                }
+            }
+        }
+        else{
+            if(swap_init_ok) {
+                struct Page *page=NULL;
+                //(1）According to the mm AND addr, try to load the content of right disk page
+                //    into the memory which page managed.
+                //(2) According to the mm, addr AND page, setup the map of phy addr <---> logical addr
+                //(3) make the page swappable.
+                //(4) [NOTICE]: you myabe need to update your lab3's implementation for LAB5's normal execution.
+
+                if ((ret = swap_in(mm, addr, &page)) != 0) {
+                    cprintf("swap_in in do_pgfault failed\n");
+                    goto failed;
+                }    
+                page_insert(mm->pgdir, page, addr, perm);
+                swap_map_swappable(mm, addr, page, 1);
+                page->pra_vaddr = addr;
+            }
+            else {
+                cprintf("no swap_init_ok but ptep is %x, failed\n",*ptep);
+                goto failed;
+            }
+        }    
+    }
+```
+
+测试结果如下：
+
+测试运行命令 `make run-dirtycow`
+
+```
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault at affff000: copied
+Handled one COW fault: reused                                                                        
+I am child 4
+Handled one COW fault: reused
+I am child 3
+Handled one COW fault: reused
+I am child 2
+Handled one COW fault: reused
+I am child 1
+Handled one COW fault: reused
+I am child 0
+forktest pass.
+all user-mode processes have quit.
+init check memory pass. 
+```
+
+另外会在博客里写一篇关于CVE-2016-5195漏洞的分析与复现，这个漏洞是著名的脏牛漏洞，DirtyCow，它主要的利用是竞争，同时也正好利用到了lab5包括之前的知识，包括对页异常的处理等。博客地址：www.resery.top

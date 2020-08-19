@@ -2,7 +2,7 @@
 
 Special kernel symbols:
   entry  0xc0100036 (phys)
-  etext  0xc010c313 (phys)
+  etext  0xc010c30e (phys)
   edata  0xc019f000 (phys)
   end    0xc01a21c4 (phys)
 Kernel executable memory footprint: 649KB
@@ -94,9 +94,10 @@ check_swap() succeeded!
 kernel_execve: pid = 2, name = "waitkill".
 wait child 1.
 child 2.
+child 1.
 kill parent ok.
 kill child1 ok.
-call user-mode processes have quit.
+all user-mode processes have quit.
 init check memory pass.
 kernel panic at kern/process/proc.c:471:
     initproc exit.
@@ -106,7 +107,7 @@ ebp:0xc0384f88 eip:0xc0100bb3 args:0xc010c3e8 0xc0384fcc 0x000001d7 0xc0384fb8
     kern/debug/kdebug.c:351: print_stackframe+22
 ebp:0xc0384fb8 eip:0xc0100473 args:0xc010e410 0x000001d7 0xc010e462 0x00000000
     kern/debug/panic.c:27: __panic+104
-ebp:0xc0384fe8 eip:0xc010a471 args:0x00000000 0x00000000 0x00000000 0x00000010
+ebp:0xc0384fe8 eip:0xc010a46c args:0x00000000 0x00000000 0x00000000 0x00000010
     kern/process/proc.c:474: do_exit+92
 Welcome to the kernel debug monitor!!
 Type 'help' for a list of commands.
