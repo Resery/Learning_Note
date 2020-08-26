@@ -48,3 +48,10 @@ grade截图：
 
 grade截图：
 ![](Picture/lab6grade.png)
+
+## Lab 7
+
+涉及实现同步互斥的三种方法，信号量，管程和条件变量，哲学家就餐问题
+
+grade截图：
+![](Picture/lab7grade.png)
