@@ -18,7 +18,7 @@ ActiveX组件Touchvewocx.ocx接口函数SetProjectPath（string*）调用OpenSto
 
 这个漏洞可以导致拒绝服务而不能达到远程代码执行的目的，触发漏洞的主要主要代码在下面图片的位置
 
-![](picture/6.jpeg)
+![](picture/6.png)
 
 可以看到图中绿色的部分，有两个if判断，分别是`(unsighed long)e_phoff + e_phnum * sizeof(Elf32_Shdr)`和`(unsighed long)e_shoff + e_shnum * sizeof(Elf32_Shdr)`
 
