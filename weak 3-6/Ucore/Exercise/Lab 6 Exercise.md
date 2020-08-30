@@ -227,3 +227,281 @@ skew_heap_entry_t  *skew_heap_remove(skew_heap_entry_t  *a,
 
 ### 解：
 
+### CFS调度算法原理
+
+[文章来源](https://blog.csdn.net/XD_hebuters/article/details/79623130)
+
+调度算法最核心的两点即为调度哪个进程执行、被调度进程执行的时间多久。前者称为**调度策略**，后者为**执行时间**。
+
+#### 调度策略
+
+cfs定义一种新的模型，它给cfs_rq（cfs的run queue）中的每一个进程安排一个虚拟时钟，vruntime。如果一个进程得以执行，随着时间的增长（即一个个tick的到来），其vruntime将不断增大。没有得到执行的进程vruntime不变。
+**调度器总是选择vruntime值最低的进程执行**。这就是所谓的“**完全公平**”。对于不同进程，优先级高的进程vruntime增长慢，以至于它能得到更多的运行时间。
+
+**公平的体现：机会平等，时间差异**
+公平体现在vruntime (virtual runtime， 虚拟运行时间)上面，它记录着进程已经运行的时间，其大小与进程的权重、运行时间存在一个定量计算关系。
+
+> **vruntime = 实际运行时间 \* 1024 / 进程权重**
+
+实际上1024等于nice为0的进程的权重，代码中是NICE_0_LOAD，也就是说，所有进程都以nice值为0的权重1024作为基准，计算自己的vruntime增加速度。结合分配给进程实际运行的时间，可得如下换算关系：
+
+> **分配给进程的时间 = 调度周期 \* 进程权重 / 全部进程权重之和**
+> **vruntime = 实际运行时间 \* 1024 / 进程权重**
+> **vruntime = （调度周期 \* 进程权重 / 全部进程权重之和） \* 1024 / 进程权重**
+> **vruntime = （调度周期 / 全部进程权重之和） \* 1024**
+
+可以看到进程在一个调度周期内的vruntime值大小与进程权重无关，所有进程的vruntime值在一个周期内增长是一致的。vruntime值较小的进程，说明它以前占用cpu的时间较短，受到了不公平对待，因此选择作为下一次运行的进程。
+这样既能公平选择进程，又能保证高优先级进程获得较多运行时间，就是cfs的主要思想了。其可以简单概括为：**机会平等、时间差异**。
+
+#### 执行时间
+
+cfs采用当前系统中全部可调度进程优先级的比重确定每一个进程执行的时间片，即：
+
+> **分配给进程的时间 = 调度周期 \* 进程权重 / 全部进程之和。**
+
+假如有三个可调度进程A、B、C，它们的优先级分别为5,10,15，调度周期为60ms, 则它们的时间片分别为：60ms * 5 / 30 = 10ms、60ms * 10 / 30 = 20ms、60ms * 15 / 30 = 30ms
+
+#### 骨架—红黑树
+
+cfs调度算法使用红黑树来实现，其详细内容可以参考维基百科[红黑树的介绍](https://zh.wikipedia.org/wiki/红黑树)。这里简单讲一下cfs的结构。第一个是调度实体sched_entity，它代表一个调度单位，在组调度关闭的时候可以把他等同为进程。每一个task_struct中都有一个sched_entity，进程的vruntime和权重都保存在这个结构中。
+sched_entity通过红黑树组织在一起，所有的sched_entity以vruntime为key(实际上是以vruntime-min_vruntime为key，是为了防止溢出)插入到红黑树中，同时缓存树的最左侧节点，也就是vruntime最小的节点，这样可以迅速选中vruntime最小的进程。
+
+> 仅处于就绪态的进程在这棵树上，睡眠进程和正在运行的进程都不在树上。
+
+![]()
+
+#### nice值与权重的关系
+
+每一个进程都有一个nice值，代表其静态优先级。可以参考[ Linux nice及renice命令使用](http://blog.csdn.net/XD_hebuters/article/details/79619213)。nice值和进程的权重的关系存储在数组prio_to_weight中，如下所示：
+
+```
+/*prio_to_weight数组反应的是nice值与权重的对应关系*/
+static const int prio_to_weight[40] = {
+     /* -20 */     88761,     71755,     56483,     46273,     36291,
+     /* -15 */     29154,     23254,     18705,     14949,     11916,
+     /* -10 */      9548,      7620,      6100,      4904,      3906,
+     /*  -5 */      3121,      2501,      1991,      1586,      1277,
+     /*   0 */      1024,       820,       655,       526,       423,
+     /*   5 */       335,       272,       215,       172,       137,
+     /*  10 */       110,        87,        70,        56,        45,
+     /*  15 */        36,        29,        23,        18,        15,
+     };
+```
+
+可以看到，nice值越小，进程的权重越大。CFS调度器的一个调度周期是固定的,由sysctl_sched_latency变量保存。
+
+#### 两个重要的结构体
+
+**完全公平队列cfs_rq：**描述运行在一个cpu上的处于TASK_RUNNING状态的普通进程的各种运行信息：
+
+```
+struct cfs_rq {
+    struct load_weight load;  //运行队列总的进程权重
+    unsigned int nr_running, h_nr_running; //进程的个数
+
+    u64 exec_clock;  //运行的时钟
+    u64 min_vruntime; //该cpu运行队列的vruntime推进值, 一般是红黑树中最小的vruntime值
+
+    struct rb_root tasks_timeline; //红黑树的根结点
+    struct rb_node *rb_leftmost;  //指向vruntime值最小的结点
+    //当前运行进程, 下一个将要调度的进程, 马上要抢占的进程, 
+    struct sched_entity *curr, *next, *last, *skip;
+
+    struct rq *rq; //系统中有普通进程的运行队列, 实时进程的运行队列, 这些队列都包含在rq运行队列中  
+    ...
+    };
+```
+
+**调度实体sched_entity:**记录一个进程的运行状态信息
+
+```
+struct sched_entity {
+    struct load_weight  load; //进程的权重
+    struct rb_node      run_node; //运行队列中的红黑树结点
+    struct list_head    group_node; //与组调度有关
+    unsigned int        on_rq; //进程现在是否处于TASK_RUNNING状态
+
+    u64         exec_start; //一个调度tick的开始时间
+    u64         sum_exec_runtime; //进程从出生开始, 已经运行的实际时间
+    u64         vruntime; //虚拟运行时间
+    u64         prev_sum_exec_runtime; //本次调度之前, 进程已经运行的实际时间
+    struct sched_entity *parent; //组调度中的父进程
+    struct cfs_rq       *cfs_rq; //进程此时在哪个运行队列中
+};
+```
+
+#### 几个与cfs有关的过程：
+
+**1)、创建新进程：**需要设置新进程的vruntime值及将新进程加入红黑树中，并判断是否需要抢占当前进程。
+**2)、进程唤醒：**需要调整睡眠进程的vruntime值, 并且将睡眠进程加入红黑树中. 并判断是否需要抢占当前进程
+**3)、进程调度：**需要把当前进程加入红黑树中, 还要从红黑树中挑选出下一个要运行的进程.
+**4)、时钟周期中断：**在时钟中断周期函数中, 需要更新当前运行进程的vruntime值, 并判断是否需要抢占当前进程
+**这里详细的代码实现，可以参考：**[Linux的CFS(完全公平调度)算法](http://blog.csdn.net/liuxiaowu19911121/article/details/47070111),代码解释非常详实。
+
+#### ucore中的实现
+
+实现的并不是特别完整的CFS算法，只是部分思想是一致的，然后大部分都是改的Stride算法的，因为Stride算法也有一个表示优先级的链表可以把它当成哪个红黑树，然后步长stride就可以当成vruntime。所以这个cfs属于阉割版，只有对应思想，但是并没有关于红黑树的操作和具体vruntime的计算，代码如下：
+
+```
+#include <defs.h>
+#include <list.h>
+#include <proc.h>
+#include <assert.h>
+#include <default_sched.h>
+
+#define NICE_0_LOAD 1024
+
+static int
+proc_cfs_comp_f(void *a, void *b)
+{
+     struct proc_struct *p = le2proc(a, lab6_run_pool);
+     struct proc_struct *q = le2proc(b, lab6_run_pool);
+     int32_t c = p->lab6_stride - q->lab6_stride;
+     if (c > 0) return 1;
+     else if (c == 0) return 0;
+     else return -1;
+}
+
+
+static void
+cfs_init(struct run_queue *rq) {
+    list_init(&rq->run_list);
+    rq->lab6_run_pool = NULL;
+    rq->proc_num = 0;
+}
+
+static void
+cfs_enqueue(struct run_queue *rq, struct proc_struct *proc) {
+    rq->lab6_run_pool = skew_heap_insert(rq->lab6_run_pool, &(proc->lab6_run_pool), proc_cfs_comp_f);
+    if (proc->time_slice == 0 || proc->time_slice > rq->max_time_slice) {
+      proc->time_slice = rq->max_time_slice;
+    }
+    if (proc->lab6_priority == 0) {
+        proc->lab6_priority = 1;
+    }
+    proc->rq = rq;
+    rq->proc_num ++;
+}
+
+static void
+cfs_dequeue(struct run_queue *rq, struct proc_struct *proc) {
+    rq->lab6_run_pool = skew_heap_remove(rq->lab6_run_pool,&(proc->lab6_run_pool),proc_cfs_comp_f);
+    rq->proc_num --;
+}
+
+static struct proc_struct *
+cfs_pick_next(struct run_queue *rq) {
+    if (rq->lab6_run_pool == NULL) return NULL;
+  struct proc_struct* min_proc = le2proc(rq->lab6_run_pool, lab6_run_pool);
+
+  if (min_proc->lab6_priority == 0) {
+    min_proc->lab6_stride += NICE_0_LOAD;
+  }
+  else if (min_proc->lab6_priority > NICE_0_LOAD) {
+    min_proc->lab6_stride += 1;
+  }
+  else {
+    min_proc->lab6_stride += NICE_0_LOAD / min_proc->lab6_priority;
+  }
+  return min_proc;
+}
+
+
+static void
+cfs_proc_tick(struct run_queue *rq, struct proc_struct *proc) {
+    if(proc->time_slice > 0) proc->time_slice--;
+    if(proc->time_slice == 0) proc->need_resched = 1;
+}
+
+struct sched_class default_sched_class = {
+     .name = "cfs_scheduler",
+     .init = cfs_init,
+     .enqueue = cfs_enqueue,
+     .dequeue = cfs_dequeue,
+     .pick_next = cfs_pick_next,
+     .proc_tick = cfs_proc_tick,
+};
+```
+
+运行也可以成功，最后会得到这样的输出（第一行）：
+
+```
+sched class: cfs_scheduler
+ide 0:      10000(sectors), 'QEMU HARDDISK'.
+ide 1:     262144(sectors), 'QEMU HARDDISK'.
+SWAP: manager = fifo swap manager
+BEGIN check_swap: count 1, total 31815
+setup Page Table for vaddr 0X1000, so alloc a page
+setup Page Table vaddr 0~4MB OVER!
+set up init env for check_swap begin!
+page fault at 0x00001000: K/W [no page found].
+page fault at 0x00002000: K/W [no page found].
+page fault at 0x00003000: K/W [no page found].
+page fault at 0x00004000: K/W [no page found].
+set up init env for check_swap over!
+write Virt Page c in fifo_check_swap
+write Virt Page a in fifo_check_swap
+write Virt Page d in fifo_check_swap
+write Virt Page b in fifo_check_swap
+write Virt Page e in fifo_check_swap
+page fault at 0x00005000: K/W [no page found].
+swap_out: i 0, store page in vaddr 0x1000 to disk swap entry 2
+write Virt Page b in fifo_check_swap
+write Virt Page a in fifo_check_swap
+page fault at 0x00001000: K/W [no page found].
+swap_out: i 0, store page in vaddr 0x2000 to disk swap entry 3
+swap_in: load disk swap entry 2 with swap_page in vadr 0x1000
+write Virt Page b in fifo_check_swap
+page fault at 0x00002000: K/W [no page found].
+swap_out: i 0, store page in vaddr 0x3000 to disk swap entry 4
+swap_in: load disk swap entry 3 with swap_page in vadr 0x2000
+write Virt Page c in fifo_check_swap
+page fault at 0x00003000: K/W [no page found].
+swap_out: i 0, store page in vaddr 0x4000 to disk swap entry 5
+swap_in: load disk swap entry 4 with swap_page in vadr 0x3000
+write Virt Page d in fifo_check_swap
+page fault at 0x00004000: K/W [no page found].
+swap_out: i 0, store page in vaddr 0x5000 to disk swap entry 6
+swap_in: load disk swap entry 5 with swap_page in vadr 0x4000
+write Virt Page e in fifo_check_swap
+page fault at 0x00005000: K/W [no page found].
+swap_out: i 0, store page in vaddr 0x1000 to disk swap entry 2
+swap_in: load disk swap entry 6 with swap_page in vadr 0x5000
+write Virt Page a in fifo_check_swap
+page fault at 0x00001000: K/R [no page found].
+swap_out: i 0, store page in vaddr 0x2000 to disk swap entry 3
+swap_in: load disk swap entry 2 with swap_page in vadr 0x1000
+count is 0, total is 5
+check_swap() succeeded!
+++ setup timer interrupts
+kernel_execve: pid = 2, name = "priority".
+main: fork ok,now need to wait pids.
+child pid 7, acc 1888000, time 1001
+child pid 5, acc 1112000, time 1001
+child pid 3, acc 384000, time 1002
+main: pid 3, acc 384000, time 1002
+child pid 6, acc 1468000, time 1003
+child pid 4, acc 760000, time 1003
+main: pid 4, acc 760000, time 1004
+main: pid 5, acc 1112000, time 1004
+main: pid 6, acc 1468000, time 1004
+main: pid 7, acc 1888000, time 1004
+main: wait pids over
+stride sched correct result: 1 2 3 4 5
+all user-mode processes have quit.
+init check memory pass.
+kernel panic at kern/process/proc.c:489:
+    initproc exit.
+
+stack trackback:
+ebp:0xc0398f88 eip:0xc0100bb8 args:0xc010ce88 0xc0398fcc 0x000001e9 0xc0398fb8
+    kern/debug/kdebug.c:351: print_stackframe+22
+ebp:0xc0398fb8 eip:0xc0100478 args:0xc010ee90 0x000001e9 0xc010eee2 0x00000000
+    kern/debug/panic.c:27: __panic+104
+ebp:0xc0398fe8 eip:0xc010a4e3 args:0x00000000 0x00000000 0x00000000 0x00000010
+    kern/process/proc.c:492: do_exit+92
+Welcome to the kernel debug monitor!!
+Type 'help' for a list of commands.
+K> #
+```
+

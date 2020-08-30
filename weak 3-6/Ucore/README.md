@@ -54,11 +54,11 @@ grade截图：
 涉及实现同步互斥的三种方法，信号量，管程和条件变量，哲学家就餐问题
 
 grade截图：
-![](Picture/lab8grade.png)
+![](Picture/lab7grade.png)
 
-## Lab 7
+## Lab 8
 
 涉及文件系统和文件,文件描述符,文件、目录的定义与区别,虚拟文件系统对上层提供的接口以及实现
-
+1
 grade截图：
 ![](Picture/lab8grade.png)

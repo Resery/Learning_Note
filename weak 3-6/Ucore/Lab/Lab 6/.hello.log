@@ -2,23 +2,23 @@
 
 Special kernel symbols:
   entry  0xc0100036 (phys)
-  etext  0xc010ca4b (phys)
-  edata  0xc01b2000 (phys)
-  end    0xc01b51e4 (phys)
-Kernel executable memory footprint: 725KB
-ebp:0xc012df38 eip:0xc0100bb8 args:0x00010094 0x00010094 0xc012df68 0xc01000e4
+  etext  0xc010cdaf (phys)
+  edata  0xc01b3000 (phys)
+  end    0xc01b61e4 (phys)
+Kernel executable memory footprint: 729KB
+ebp:0xc012ef38 eip:0xc0100bb8 args:0x00010094 0x00010094 0xc012ef68 0xc01000e4
     kern/debug/kdebug.c:351: print_stackframe+22
-ebp:0xc012df48 eip:0xc0100ebd args:0x00000000 0x00000000 0x00000000 0xc012dfb8
+ebp:0xc012ef48 eip:0xc0100ebd args:0x00000000 0x00000000 0x00000000 0xc012efb8
     kern/debug/kmonitor.c:130: mon_backtrace+11
-ebp:0xc012df68 eip:0xc01000e4 args:0x00000000 0xc012df90 0xffff0000 0xc012df94
+ebp:0xc012ef68 eip:0xc01000e4 args:0x00000000 0xc012ef90 0xffff0000 0xc012ef94
     kern/init/init.c:60: grade_backtrace2+34
-ebp:0xc012df88 eip:0xc010010e args:0x00000000 0xffff0000 0xc012dfb4 0x0000002a
+ebp:0xc012ef88 eip:0xc010010e args:0x00000000 0xffff0000 0xc012efb4 0x0000002a
     kern/init/init.c:65: grade_backtrace1+39
-ebp:0xc012dfa8 eip:0xc010012d args:0x00000000 0xc0100036 0xffff0000 0x0000001d
+ebp:0xc012efa8 eip:0xc010012d args:0x00000000 0xc0100036 0xffff0000 0x0000001d
     kern/init/init.c:70: grade_backtrace0+24
-ebp:0xc012dfc8 eip:0xc0100153 args:0xc010ca7c 0xc010ca60 0x000031e4 0x00000000
+ebp:0xc012efc8 eip:0xc0100153 args:0xc010cddc 0xc010cdc0 0x000031e4 0x00000000
     kern/init/init.c:75: grade_backtrace+35
-ebp:0xc012dff8 eip:0xc010008b args:0xc010cc70 0xc010cc78 0xc0100e45 0xc010cc97
+ebp:0xc012eff8 eip:0xc010008b args:0xc010cfd0 0xc010cfd8 0xc0100e45 0xc010cff7
     kern/init/init.c:35: kern_init+85
 memory management: default_pmm_manager
 e820map:
@@ -44,11 +44,11 @@ check_vma_struct() succeeded!
 page fault at 0x00000100: K/W [no page found].
 check_pgfault() succeeded!
 check_vmm() succeeded.
-sched class: stride_scheduler
+sched class: cfs_scheduler
 ide 0:      10000(sectors), 'QEMU HARDDISK'.
 ide 1:     262144(sectors), 'QEMU HARDDISK'.
 SWAP: manager = fifo swap manager
-BEGIN check_swap: count 1, total 31816
+BEGIN check_swap: count 1, total 31815
 setup Page Table for vaddr 0X1000, so alloc a page
 setup Page Table vaddr 0~4MB OVER!
 set up init env for check_swap begin!
@@ -102,11 +102,12 @@ kernel panic at kern/process/proc.c:489:
     initproc exit.
 
 stack trackback:
-ebp:0xc0397f88 eip:0xc0100bb8 args:0xc010cb28 0xc0397fcc 0x000001e9 0xc0397fb8
+ebp:0xc0398f88 eip:0xc0100bb8 args:0xc010ce88 0xc0398fcc 0x000001e9 0xc0398fb8
     kern/debug/kdebug.c:351: print_stackframe+22
-ebp:0xc0397fb8 eip:0xc0100478 args:0xc010eb30 0x000001e9 0xc010eb82 0x00000000
+ebp:0xc0398fb8 eip:0xc0100478 args:0xc010ee90 0x000001e9 0xc010eee2 0x00000000
     kern/debug/panic.c:27: __panic+104
-ebp:0xc0397fe8 eip:0xc010a4e3 args:0x00000000 0x00000000 0x00000000 0x00000010
+ebp:0xc0398fe8 eip:0xc010a4e3 args:0x00000000 0x00000000 0x00000000 0x00000010
     kern/process/proc.c:492: do_exit+92
 Welcome to the kernel debug monitor!!
 Type 'help' for a list of commands.
+K> 
