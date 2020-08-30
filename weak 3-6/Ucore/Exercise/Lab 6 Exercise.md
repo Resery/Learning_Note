@@ -268,7 +268,7 @@ sched_entity通过红黑树组织在一起，所有的sched_entity以vruntime为
 
 > 仅处于就绪态的进程在这棵树上，睡眠进程和正在运行的进程都不在树上。
 
-![]()
+![](https://resery-tuchuang.oss-cn-beijing.aliyuncs.com/2020-08-30_19-46-45.png)
 
 #### nice值与权重的关系
 
