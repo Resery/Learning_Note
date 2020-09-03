@@ -1,6 +1,6 @@
 # Dirty Cow
 
-**复现环境：**Ubuntu 14.04.4 desktop amd64
+**复现环境：** Ubuntu 14.04.4 desktop amd64
 
 **成功截图：**
 
