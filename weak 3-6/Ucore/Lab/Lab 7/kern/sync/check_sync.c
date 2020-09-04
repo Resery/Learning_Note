@@ -243,7 +243,7 @@ int philosopher_using_condvar(void * arg) { /* arg is the No. of philosopher 0~N
 void check_sync(void){
 
     int i;
-
+    /*
     //check semaphore
     sem_init(&mutex, 1);
     for(i=0;i<N;i++){
@@ -267,5 +267,5 @@ void check_sync(void){
         philosopher_proc_condvar[i] = find_proc(pid);
         set_proc_name(philosopher_proc_condvar[i], "philosopher_condvar_proc");
     }
-
+    */
 }

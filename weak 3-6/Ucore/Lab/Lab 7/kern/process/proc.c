@@ -859,8 +859,11 @@ init_main(void *arg) {
     if (pid <= 0) {
         panic("create user_main failed.\n");
     }
- extern void check_sync(void);
-    check_sync();                // check philosopher sync problem
+    //extern void check_sync(void);
+    //check_sync();                // check philosopher sync problem
+
+    extern void check_rcu(void);
+    check_rcu();
 
     while (do_wait(0, NULL) == 0) {
         schedule();
