@@ -44,21 +44,24 @@ grade截图：
 
 ## Lab 6
 
-涉及面向对象编程思想，Round-Robin调度算法，Stride调度算法，多级反馈队列调度算法，调度算法框架的实现，ucore中对调度算法的具体封装方式，ucore中具体的调度算法的实现
+涉及面向对象编程思想，Round-Robin调度算法，Stride调度算法，多级反馈队列调度算法，调度算法框架的实现，ucore中对调度算法的具体封装方式，ucore中具体的调度算法的实现，lab6思维导图如下：
+![](Picture/lab6.png)
 
 grade截图：
 ![](Picture/lab6grade.png)
 
 ## Lab 7
 
-涉及实现同步互斥的三种方法，信号量，管程和条件变量，哲学家就餐问题
+涉及实现同步互斥的三种方法，信号量，管程和条件变量，哲学家就餐问题，lab7思维导图如下：
+![](Picture/lab7.png)
 
 grade截图：
 ![](Picture/lab7grade.png)
 
 ## Lab 8
 
-涉及文件系统和文件,文件描述符,文件、目录的定义与区别,虚拟文件系统对上层提供的接口以及实现
+涉及文件系统和文件,文件描述符,文件、目录的定义与区别,虚拟文件系统对上层提供的接口以及实现，lab8思维导图如下：
+![](Picture/lab8.png)
 
 grade截图：
 ![](Picture/lab8grade.png)
