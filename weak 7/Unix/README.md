@@ -1,5 +1,3 @@
-**环境配置**
-
 **Chapter 1: UNIX 基础知识**
 
 **Chapter 2: UNIX 标准及实现**
