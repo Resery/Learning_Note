@@ -71,7 +71,7 @@ int main(int argc,char *argv[]) {
 }
 ```
 
-![](4.png)
+![](picture/4.png)
 
 O_CLOEXEC：把FD_CLOEXEC常量设置为文件描述符标志
 
@@ -172,11 +172,11 @@ int main(void){
 
 下面两个是对比图，但是我测试的时候发现如果说设置的偏移是0x1000的话占用的磁盘块的数量是一样的，具体什么原因还没有搞清楚
 
-![](2.png)
+![](picture/2.png)
 
 
 
-![](1.png)
+![](picture/1.png)
 
 ### 函数read和write
 
@@ -196,11 +196,11 @@ ssize_t write(int fd, const void *buf, size_t nbytes);
 
 和文件系统内容差不多，看图理解就行
 
-![](5.png)
+![](picture/5.png)
 
 
 
-![](6.png)
+![](picture/6.png)
 
 ### 原子操作
 
@@ -235,7 +235,7 @@ dup2可以用fd2参数指定新描述符的值，如果fd2已经打开，则先�
 
 这两个函数返回的新文件描述符和参数fd共享一个文件表项，如下图所示
 
-![](7.png)
+![](picture/7.png)
 
 dup2是原子操作
 
@@ -475,7 +475,7 @@ filter file2|cat file1 /dev/fd/0 file3|lpr1
    fd3 = open(path, oflags);
    ```
 
-   ![](8.png)
+   ![](picture/8.png)
 
    F_SETFD会影响fd1和fd2，F_SETFL，会影响fd1、fd2和fd3
 
@@ -493,11 +493,11 @@ filter file2|cat file1 /dev/fd/0 file3|lpr1
 
    fd是1的情况
 
-   ![](9.png)
+   ![](picture/9.png)
 
    fd是3的情况
 
-   ![](10.png)
+   ![](picture/10.png)
 
 5. 在Bourne shell、Bourne-again shell和 Korn shell中，digit1 > & digit2 表示要将描述符digit1重定向至描述符digit2的同一文件。请说明下面两条命令的区别
 
