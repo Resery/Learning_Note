@@ -1,5 +1,8 @@
-# Skr_University
+# Virtualized_Learning
 
-- Weak1-2:   [SGI STL](weak&#32;1-2/)
-- Weak3-6:   [CSAPP DirtyCow IOV Makefile Ucore](weak&#32;3-6/)
-- Weak7-8:   [Google Unix Confidence Plaid](weak&#32;7-8/)
+- C++ Basis (undone) :  		 [SGI STL](C++/)
+- Kernel Basis (undone) :      [CSAPP Ucore Makefile](Kernel/)
+- Vulnerability (undone)：    [DirtyCow IOV](Vulnerability /)
+- CTFs (undone)：                  [Google Confidence Plaid](CTFs/)
+- Linux and Unix (undone):   [Unix](Linux_and_Unix/)
+

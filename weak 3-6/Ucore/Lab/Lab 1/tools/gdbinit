@@ -1,5 +1,0 @@
-file bin/kernel
-target remote 127.0.0.1:1234
-set architecture i8086
-b *0x7c00
-c
