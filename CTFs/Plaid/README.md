@@ -396,7 +396,7 @@ bool __fastcall check(unsigned int child_pid, user_regs_struct *regs)
 3. **return regs.rsi <= 0x1000：**\_\_NR_munmap、\_\_NR_mprotect 、\_\_NR_mmap
 4. **return 1：**open只读，open参数为flag，使用的不是上面列出的系统调用
 
-程序大致逻辑都已经弄懂了，我们需要做的就是使用shellcode绕过open这个限制，我的绕过想法就是使用int  0x80来调用32位的open的系统调用号，在32位系统调用号中open的系统调用号为4，并且4在64位系统调用号中是fstat。在上面的check函数中也可以看到4这个系统调用号是可以使用的并且没有flag字段的限制。通过这个方法我们就可以达到使用open的目的，由于剩下的read和write系统调用都没有限制所以说后面的read和write调用就可以直接使用了，下面的图是对应mmap的参数传入顺序，我最开始第4个参数一直都往ecx里传，导致shellcode打不通，然后查了一下发现mmap的第4个参数使用r10来传
+程序大致逻辑都已经弄懂了，我们需要做的就是使用shellcode绕过open这个限制，我的绕过想法就是使用int  0x80来调用32位的open的系统调用号，在32位系统调用号中open的系统调用号为5，并且5在64位系统调用号中是fstat。在上面的check函数中也可以看到5这个系统调用号是可以使用的并且没有flag字段的限制。通过这个方法我们就可以达到使用open的目的，由于剩下的read和write系统调用都没有限制所以说后面的read和write调用就可以直接使用了，下面的图是对应mmap的参数传入顺序，我最开始第4个参数一直都往ecx里传，导致shellcode打不通，然后查了一下发现mmap的第4个参数使用r10来传
 
 ![](first.png)
 
