@@ -8,7 +8,7 @@
 
 ### 2.1.1小节：
 
-建议先阅读一下I/O的五种模型（参考链接：https://juejin.im/post/6844903782094995470）、Glib事件循环机制（这篇文章的前半部分涉及了glib事件循环机制并且有一个demo可以方便理解Glib事件循环机制:https://blog.csdn.net/huang987246510/article/details/90738137）、也可以再去了解一下libc、glibc、glib的区别
+建议先阅读一下I/O的五种模型（[参考链接](https://juejin.im/post/6844903782094995470)）、Glib事件循环机制（这篇文章的前半部分涉及了glib事件循环机制并且有一个demo可以方便理解Glib事件循环机制:[参考链接](https://blog.csdn.net/huang987246510/article/details/90738137)）、也可以再去了解一下libc、glibc、glib的区别
 
 ### 2.1.2小节：
 
