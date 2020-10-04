@@ -30,17 +30,17 @@ date: 2020-10-04 20:00:00
 
 调试器功能截图：
 
-![](https://resery-tuchuang.oss-cn-beijing.aliyuncs.com/2020-10-04_19-55-40.png)
+![](1.png)
 
-![](https://resery-tuchuang.oss-cn-beijing.aliyuncs.com/2020-10-04_19-56-36.png)
+![](2.png)
 
-![](https://resery-tuchuang.oss-cn-beijing.aliyuncs.com/2020-10-04_19-57-02.png)
+![](3.png)
 
-![](https://resery-tuchuang.oss-cn-beijing.aliyuncs.com/2020-10-04_19-57-21.png)
+![](4.png)
 
-![](https://resery-tuchuang.oss-cn-beijing.aliyuncs.com/2020-10-04_19-57-36.png)
+![](5.png)
 
-![](https://resery-tuchuang.oss-cn-beijing.aliyuncs.com/2020-10-04_19-58-07.png)
+![](6.png)
 
 调试器代码：
 
