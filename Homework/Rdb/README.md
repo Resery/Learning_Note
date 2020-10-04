@@ -1,15 +1,3 @@
----
-title: 写一个微型调试器
-author: Resery
-tags:
-  - debug
-categories:
-  - Code
-top_img: https://resery-tuchuang.oss-cn-beijing.aliyuncs.com/2020-10-04_20-00-13.jpg
-cover: https://resery-tuchuang.oss-cn-beijing.aliyuncs.com/2020-10-04_20-00-13.jpg
-date: 2020-10-04 20:00:00
----
-
 # Rdb 类似于Gdb的微型调试器
 
 **重点、重点、重点** ：**我的这个调试器只实现了r、c、b、还有输出寄存器、输出栈的内容的功能，而且b只能使用地址来下断点，而且b不会判断你输入的地址是否为有效地址，这些功能以后会慢慢完善，还有能用面向对象就用面向对象(血的教训)**
