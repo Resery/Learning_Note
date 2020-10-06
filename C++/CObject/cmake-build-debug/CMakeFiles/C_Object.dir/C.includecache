@@ -1,0 +1,28 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/tmp/tmp.8MbmgKY8hI/main.c
+stdio.h
+-
+shape.h
+/tmp/tmp.8MbmgKY8hI/shape.h
+rectangle.h
+/tmp/tmp.8MbmgKY8hI/rectangle.h
+
+/tmp/tmp.8MbmgKY8hI/rectangle.c
+rectangle.h
+/tmp/tmp.8MbmgKY8hI/rectangle.h
+
+/tmp/tmp.8MbmgKY8hI/rectangle.h
+shape.h
+/tmp/tmp.8MbmgKY8hI/shape.h
+
+/tmp/tmp.8MbmgKY8hI/shape.h
+stdio.h
+-
+

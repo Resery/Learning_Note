@@ -1,0 +1,1 @@
+/usr/bin/cc -g   CMakeFiles/C_Object.dir/main.c.o CMakeFiles/C_Object.dir/shape.c.o CMakeFiles/C_Object.dir/rectangle.c.o CMakeFiles/C_Object.dir/circle.c.o  -o C_Object 

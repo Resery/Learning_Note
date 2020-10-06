@@ -1,6 +1,6 @@
 # Virtualized_Learning
 
-- C++ Basis (undone) :  		 [SGI STL](C++/)
+- C/C++ Basis (undone) :       [SGI STL CObject](C++/)
 - Kernel Basis (undone) :      [CSAPP Ucore Makefile](Kernel/)
 - Vulnerability (undone)：    [DirtyCow IOV](Vulnerability/)
 - CTFs (undone)：                  [Blizzard Google Confidence Plaid](CTFs/)
