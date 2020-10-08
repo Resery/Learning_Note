@@ -1,17 +1,3 @@
----
-title: QEMU KVM Note Ⅲ
-author: Resery
-tags:
-  - QEMU
-  - KVM
-categories:
-  - Note
-top_img: https://resery-tuchuang.oss-cn-beijing.aliyuncs.com/2020-09-22_14-16-21.jpg
-cover: https://resery-tuchuang.oss-cn-beijing.aliyuncs.com/2020-09-22_14-16-21.jpg
-date: 2020-10-05 09:22:00
-
----
-
 # QEMU KVM Note Ⅲ
 
 ## QOM
