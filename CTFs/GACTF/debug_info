@@ -1,0 +1,4 @@
+mmio_write: 0x5555558fdfdf
+mmio_read:  0x5555558fdf49
+pmio_write: 0x5555558fe0bd
+pmio_read:  0x5555558fe058

@@ -19,10 +19,10 @@
 DMA控制器必须有以下功能：
 
   　　1. 能向CPU发出系统保持（HOLD）信号，提出总线接管请求；
-  　　2. 当CPU发出允许接管信号后，负责对总线的控制，进入DMA方式；
-  　　3. 能对存储器寻址及能修改地址指针，实现对内存的读写操作；
-  　　4. 能决定本次DMA传送的字节数，判断DMA传送是否结束
-  　　5. 发出DMA结束信号，使CPU恢复正常工作状态。
+    　　2. 当CPU发出允许接管信号后，负责对总线的控制，进入DMA方式；
+      　　3. 能对存储器寻址及能修改地址指针，实现对内存的读写操作；
+        　　4. 能决定本次DMA传送的字节数，判断DMA传送是否结束
+          　　5. 发出DMA结束信号，使CPU恢复正常工作状态。
 
 **注意：当虚拟机通过DMA （Direct Memory Access）访问大块I/O时，QEMU 模拟程序将不会把结果放进共享页中，而是通过内存映射的方式将结果直接写到虚拟机的内存中，然后通知KVM模块告诉客户机DMA操作已经完成。**
 
@@ -266,10 +266,7 @@ void __fastcall hitb_mmio_write(HitbState *opaque, hwaddr addr, uint64_t val, un
   bool v6; // zf
   int64_t v7; // rax
 
-  if ( (addr > 0x7F || size == 4) && (!((size - 4) & 0xFFFFFFFB) || addr <= 0x7F) )// 
-                                                // 两种情况
-                                                // size等于4  addr大于0x7f
-                                                // size等于8  addr小于0x7f
+  if ( (addr > 0x7F || size == 4) && (!((size - 4) & 0xFFFFFFFB) || addr <= 0x7F) )
   {
     if ( addr == 0x80 )
     {
@@ -288,7 +285,7 @@ void __fastcall hitb_mmio_write(HitbState *opaque, hwaddr addr, uint64_t val, un
         }
         else if ( addr > 0x8C )
         {
-          if ( addr == 0x90 )                   // addr=0x9c and dma.cmd=0 -----> dma.cnt=val
+          if ( addr == 0x90 )                   // addr=0x90 and dma.cmd=0 -----> dma.cnt=val
           {
             if ( !(opaque->dma.cmd & 1) )
               opaque->dma.cnt = val;
@@ -360,9 +357,9 @@ void __fastcall hitb_mmio_write(HitbState *opaque, hwaddr addr, uint64_t val, un
 1. addr=0x80 and dma.cmd=0 -----> dma.src=val
 2. addr=0x84 and dma.cmd=0 -----> *(dma.src+4)=val
 3. addr=0x88 and dma.cmd=0 -----> dma.dst=val
-4. addr=0x8c and dma.cmd=0 -----> *(dma.dst+4)=val 
-5. addr=0x98 and dma.cmd=0 -----> dma.cmd=1|3|5|7|9|11|13|15
-6. addr=0x9c and dma.cmd=0 -----> dma.cnt=val
+4. addr=0x8c and dma.cmd=0 -----> *(dma.dst+4)=val
+5. addr=0x90 and dma.cmd=0 -----> dma.cnt=val 
+6. addr=0x98 and dma.cmd=0 -----> dma.cmd=1|3|5|7|9|11|13|15
 
 现再分析一下hitb_dma_timer函数，函数代码如下：
 
