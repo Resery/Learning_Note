@@ -11,6 +11,17 @@
 # Learning record
 
 <details>
-	<summar>2020.10.19: N1CTF Kemu</summar>
+	<summary>1st weak: STL(一)</summary>
 </details>
+
+- 弄完STL vector
+- 补C++
+- 南大计算机基础
+
+<details>
+	<summary>1st weak: STL(二)</summary>
+</details>
+
+- 弄完STL list tree
+- csapp 看到 2.3.2
 
