@@ -1,4 +1,4 @@
-# Virtualized_Learning
+# Virtualized Learning
 
 - C/C++ Basis (undone) :       [SGI STL CObject](C++/)
 - Kernel Basis (undone) :      [CSAPP Ucore Makefile](Kernel/)
@@ -7,4 +7,10 @@
 - Linux and Unix (undone):   [Unix](Unix/)
 - QEMU(undone)：                [QEMU](QEMU/)
 - Homework(undone)：        [Rdb Relf](Homework/)
+
+# Learning record
+
+<details>
+	<summar>2020.10.19: N1CTF Kemu</summar>
+</details>
 
