@@ -12,14 +12,13 @@
 
 <details>
 	<summary>1st weak: STL(一)</summary>
-</details>
-
 - 弄完STL vector
 - 补C++
 - 南大计算机基础
+</details>
 
 <details>
-	<summary>1st weak: STL(二)</summary>
+	<summary>2rd weak: STL(二)</summary>
 </details>
 
 - 弄完STL list tree
