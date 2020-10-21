@@ -6,6 +6,7 @@
 - CTFs (undone)：                  [Blizzard Google Confidence Plaid HITB GACTF Qwb(2019)](CTFs/)
 - Linux and Unix (undone):   [Unix](Unix/)
 - QEMU(undone)：                [QEMU](QEMU/)
+- LeetCode(undone)：          [925 剑指Offer_09](LeetCode/)
 - Homework(undone)：        [Rdb Relf](Homework/)
 
 # Learning record
@@ -152,3 +153,16 @@
 - day7: N1CTF Kemu 尝试做了一下  没做出来
 
 </details>
+
+<details>
+<summary>17th weak: Qemu(五)</summary>
+
+
+- day1: N1CTF Kemu 没做完
+- day2: 2019 Qwb Qwct
+- day3: 看c++ prime 刷了两道LeetCode的简单题
+- day4: Pwnable.tw两道题
+- day5: N1CTF Kemu 收尾
+- day6: Qemu/KVM 那本书 + 读/抄源码
+- day7: Qemu/KVM 那本书 + 读/抄源码
+
