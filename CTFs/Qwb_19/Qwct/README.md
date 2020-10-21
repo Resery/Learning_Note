@@ -641,7 +641,7 @@ if ( len_of_input_tmp1 )
 
 首先通过越界读泄露出基址以及system等关键信息，然后利用越界写把system的地址写入到crypto.encrypt_function，然后在input_buf里面填入想要执行的命令，再执行加密函数的时候就会执行system("command")了
 
-exp代码：
+exp代码：[exp.c]()
 
 exp执行之后的效果如下：
 
