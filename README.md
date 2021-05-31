@@ -6,17 +6,17 @@
 
 ## 主要内容
 
-- C/C++ Basis : [SGI STL CObject](C++/)
-- Kernel Basis : [CSAPP Ucore Makefile](Kernel/)
-- Vulnerability :[DirtyCow IOV CVE-2015-5165 CVE-2015-7504](Vulnerability/)
-- CTFs : [Blizzard Google Confidence Plaid HITB GACTF Qwb(2019) N1CTF](CTFs/)
-- Linux and Unix : [Unix](Unix/)
-- QEMU : [QEMU](QEMU/)
-- LeetCode : [50+](LeetCode)
-- Pwnable : [start orw calc](Pwnable/)
-- Pattern : [漏洞模式](Pattern/)
-- Homework : [Rdb Relf](Homework/)
-- Codeql : [Useful CodeQL Queries](Codeql/)
+- C/C++ Basis        [STL CObject](C++/)
+- Kernel Basis       [CSAPP Ucore Makefile](Kernel/)
+- Vulnerability      [DirtyCow IOV CVE-2015-5165 CVE-2015-7504](Vulnerability/)
+- CTFs               [Blizzard Google Confidence Plaid HITB GACTF Qwb(2019) N1CTF](CTFs/)
+- Linux and Unix     [Unix](Unix/)
+- QEMU               [QEMU](QEMU/)
+- LeetCode           [50+](LeetCode)
+- Pwnable            [start orw calc](Pwnable/)
+- Pattern            [漏洞模式](Pattern/)
+- Homework           [Rdb Relf](Homework/)
+- Codeql             [Useful CodeQL Queries](Codeql/)
 
 ## Dirary
 
@@ -25,9 +25,9 @@
 
 - 2021.05.31：
 
- - [x] select, poll, epoll 三种 IO 多路复用模型的学习
- - [ ] 多线程编程相关知识的学习
- - [ ] Rust 相关内容的学习
+  - [x] select, poll, epoll 三种 IO 多路复用模型的学习
+  - [ ] 多线程编程相关知识的学习
+  - [ ] Rust 相关内容的学习
 
 - 2021.06.01：
 
