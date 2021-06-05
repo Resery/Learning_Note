@@ -114,7 +114,7 @@ epoll_ctl 用来添加、修改或者删除 epoll 对象中 interest 列表中�
 - op: 这个参数的值应为 EPOLL_CTL_ADD, EPOLL_CTL_MOD, EPOLL_CTL_DEL中的一个，分别对应添加，修改和删除
 - fd: 这个参数指明要监管的文件描述符
 - event: 这个参数会存储与要监管的文件描述符相关的信息，以及要监管什么类型的事件，列出常用的三个 EPOLLIN, EPOLLOUT, EPOLLET, 分别就是读，写事件和开启 ET 模式
-  - event 对应的数据结构如下，其中 epoll_data 中会存储与这个事件与对应描述符的信息，ptr 指针指向 epoll 对象，fd 的值为这个事件对应监管的文件描述符，events 为要监管的事件
+  - event 对应的数据结构如下，其中 epoll_data 中会存储与这个事件与对应描述符的信息，ptr 指针指向的内容是由用户自定义的，fd 的值为这个事件对应监管的文件描述符，events 为要监管的事件
     ```C
     typedef union epoll_data {
         void         *ptr;
@@ -128,6 +128,8 @@ epoll_ctl 用来添加、修改或者删除 epoll 对象中 interest 列表中�
         epoll_data_t data;
     }
     ```
+  - LT（电平触发）：类似 select，LT 会去遍历在 epoll 事件表中每个文件描述符，来观察是否有我们感兴趣的事件发生，如果有（触发了该文件描述符上的回调函数），epoll_wait 就会以非阻塞的方式返回。若该 epoll 事件没有被处理完（没有返回 EWOULDBLOCK ），该事件还会被后续的 epoll_wait 再次触发。
+  - ET（边缘触发）：ET 在发现有我们感兴趣的事件发生后，立即返回，并且 sleep 这一事件的 epoll_wait，不管该事件有没有结束。
 
 epoll_wait 用来获取所有处于准备就绪状态的文件描述符
 - epfd: 这个参数的值应为 epoll_create 的返回值
