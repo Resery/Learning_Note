@@ -687,9 +687,9 @@ regex (和 wregex) 选项
 
 ### IO 库再探
 
-cout 格式化输出
+#### cout 格式化输出
 
-格式化输出布尔值的格式
+**格式化输出布尔值的格式**
 
 ```CPP
 cout << "default bool values: " << true << " " << false
@@ -705,7 +705,7 @@ alhpa bool values: true false
 1 0
 ```
 
-按不同进制进行输出
+**按不同进制进行输出**
 
 ```CPP
 cout << "default: " << 20 << " " << 1024 << endl;
@@ -748,7 +748,7 @@ output:
 printed in hexadecimal: 0X14 0X400
 ```
 
-控制浮点数格式
+**控制浮点数格式**
 
 ```CPP
 // cout.precision() 返回当前精度值，cout.precision(x) 用来设置当前精度
@@ -774,7 +774,7 @@ Precision: 3, Value: 1.41
 
 ![](img/format_opcode.png)
 
-输出补白
+**输出补白**
 
 - setw : 指定下一个数字或字符串值的最小空间
 - left : 表示左对齐输出
@@ -825,9 +825,55 @@ d:  #####3.14159next col
 
 
 
-| 定义在 iomanip 中的操纵符 ｜ ｜
+| 定义在 iomanip 中的操纵符 | |
 | ---- | ---- |
 | setfill(ch) | 用 ch 填充空白 |
 | setprecison(n) | 将浮点精度设置为 n |
 | setw(w) | 读或写值的宽度为 w 个字符 |
 | setbase(b) | 将整数输出为 b 进制 |
+
+**控制输入格式**
+
+操作符 noskipws 会零输入运算符读取空白符而不是跳过他它们，代码示例如下
+
+```CPP
+cin >> noskipws;
+while (cin >> ch)
+	cout << ch;
+
+cin >> skipws;
+```
+
+| 单字节底层 IO 操作 | |
+| ---- | ---- |
+| is.get(ch) | 将 istream is 读取下一个字节存入字符 ch 中。返回 is |
+| os.put(ch) | 将字符 ch 输出到 ostream os。返回 os |
+| is.get() | | 将 is 的下一个字节作为 int 返回 |
+| is.putback(ch) | 将字符 ch 放回 is。返回 is |
+| is.unget() | 将 is 向后移动一个字节。返回 is |
+| is.peek() | 将下一个字节作为 int 返回，但不从流中删除它 |
+
+三种回腿字符的方法的区别：
+- peek	返回输入流中下一个字符的副本，但不会将它从流中删除，peek 返回的值仍然留在流中
+- unget	使得输入流向后移动，从而最后读取的值又回到流中。即使我们不知道最后从流中读取什么值，仍然可以调用 unget
+- putback 是更特殊版本的 unget：他退回从流中读取的最后一个值，但他接受一个参数，此参数必须与最后读取的值相同
+
+**注意：上面指出的方法的返回值为 int 类型而不是 char 类型**
+
+**多字节操作**
+
+![](img/multibyte_io_operator.png)
+
+get 和 getline 函数接受相同的参数，它们的行为类似但不相同。在两个函数中，sink 都是一个 char 数组，用来保存数据。两个函数都一直读取数据，直至下面条件之一发生：
+- 已读取了 size - 1 个字符
+- 遇到了文件尾
+- 遇到了分隔符
+
+两个函数的差别是处理分隔符的方式：get 将分隔符留作 istream 中的下一个字符，而 getline 则读取并丢弃分隔符。无论哪个函数都不会将分隔符保存在 sink 中。
+
+| seek 和 tell 函数| |
+| ---- | ---- |
+| tellg(), tellp() | 返回一个输入流中（tellg）或输出流中（tellp）标记的当前位置 |
+| seekg(pos), seekp(pos) | 在一个输入流或输出流中将标记重定位到给定的绝对地址。pos 通常是前一个 tellg 或 tellp 返回的值 |
+| seekp(off, from), seekg(off, from) | 在一个输入流或输出流中将标记定位到 from 之前或之后 off 个字符，from可以是下列值之一 (beg，偏移量相对于流开始位置；cur，偏移量相对于流当前位置；end，偏移量相对于流结尾位置) |
+
