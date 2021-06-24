@@ -517,3 +517,317 @@ fs.Bar();		// 实例化 Foo<string>::Bar()
 Foo<int> fi;		// 实例化 Foo<int>::Foo()
 fi.Bar();		// 使用我们特例化版本的 Foo<int>::Bar()
 ```
+
+## 标准库特设设施
+
+### tuple 类型
+
+tuple 类型一旦声明后，则成员数目是固定的，并且 tuple 中的元素不必类型完全相同，而且成员数目不仅仅只可以包含两个，两个以上也是可以的
+
+tuple 支持的操作
+
+| tuple 支持的操作 |  |
+| ---- | ---- |
+| tuple<T1, T2, ..., Tn> t; | t 是一个 tuple，成员数目为n，第 i 个成员的类型为 Ti。所有成员都进行值初始化 |
+| tuple<T1, T2, ..., Tn> t(v1, v2, ..., vn); | t 是一个 tuple，成员类型为 T1...Tn，每个成员对应的初始化值 vi 进初始化。此构造函数是 explicit 的 |
+| make_tuple(v1, v2, ..., vn) | 返回一个给定初始值初始化的 tuple。tuple 的类型从初始值的类型判断 |
+| t1 == t2, t1 != t2 | 当两个 tuple 具有相同数量的成员且成员对应相等时，两个 tuple 相等，反之亦然 |
+| t1 relop t2 | tuple 的关系运算使用字序列，两个 tuple 必须具有相同数量的成员。使用 < 运算符比较 t1 的成员和 t2 中的对应成员 |
+| get<i>(t) | 返回 t 的第 i 个数据成员的引用；如果 t 是一个左值，结果是一个左值引用；否则，结果是一个右值引用。tuple 的所有成员都是 public 的 |
+| tuple_size<tupleType>::value | 一个类模版，可以通过一个 tuple 类型来初始化。它有一个名为 value 的 public constexpr static 数据成员，类型为 size_t ，表示给定 tuple 类型中成员的数量 |
+| typle_element<i, tupleType>::type | 一个类模版，可以通过一个整形常量和一个 tuple 类型来初始化。他有一个名为 type 的 public 成员，表示给定 tuple 类型中指定成员的类型 |
+
+定义和初始化 tuple，示例如下
+
+```CPP
+tuple<size_t, size_t, size_t> threeD;
+tuple<string, vector<double>, int, list<int>>
+	comeVal("constants", {3.14, 2.718}, 42, {0, 1, 2, 3, 4, 5});
+
+tuple <size_t, size_t, size_t> threeD = {1, 2, 3};	// 错误
+tuple <size_t, size_t, size_t> threeD{1, 2, 3};		// 正确
+
+auto item = make_tuple("Test String", 3, 20);
+```
+
+访问 tuple 成员以及获取 tuple 类型变量相关信息的示例代码如下：
+
+```CPP
+tuple<size_t, size_t, size_t> item{10, 20, 30};
+
+auto var0 = get<0>(item);
+auto var1 = get<1>(item);
+auto var2 = get<2>(item);
+get<2>(item) *= 2;
+
+typedef decltype(item) trans;				// trans 是 item 的类型
+// 返回 trans 类型对象中成员的数量
+size_t sz = tuple_size<trans>::value;
+// cnt 的类型与 item 中第二个成员相同
+tuple_element<1, trans>::type cnt = get<1>(item);	// cnt 是一个 int
+```
+
+tuple 与关系运算符示例代码如下
+
+```CPP
+tuple<string, string> duo("1", "2");
+tuple<size_t, size_t> twoD(1, 2);
+bool b = (duo == twoD);		// 错误，因为类型不匹配
+
+tuple<size_t, size_t, size_t> threeD(1, 2, 3);
+b = (twoD < threeD);		// 错误，因为成员数目不相同
+
+tuple<size_t, size_t> origin(0, 0);
+b = (origin < twoD);		// 正确 b 为 true
+```
+
+### bitset 类型
+
+bitset 主要是为了方便进行位运算的，他存储的是二进制位的集合，也就是说他可以处理超过最长整形类型大小的二进制位
+
+定义和初始化 bitest 的方法如下所示：
+
+| 初始化 biteset 的方法 | |
+| ---- | ---- |
+| bitset<n> b; | b 有 n 位；每一位均为 0。此构造函数是一个 constexpr |
+| bitset<n> b(u); | b 是 unsigned long long 类型的值 u 的低 n 位的拷贝。如果 n 大雨 unsigned long long 的大小，则 b 中超出 unsigned long long 的高位被置为 0。此构造函数是一个 constexpr |
+| bitset<n> b(s, pos, m, zero, one); | b 是 string s 从位置 pos 开始 m 个字符的拷贝。s 只包含字符 zero 或 one；如果 s 包含任何其他字符，构造函数会抛出 invalied_argument 异常。字符在 b 中分别保存为 zero 和 one。pos 默认为 0，n 默认为 string::pos，zero 默认为‘0’，one 默认为 ‘1’ |
+| bitset<n> b(cp, pos, m, zero, one); | 与上一个构造函数相同，但从 cp 指向的字符数组中拷贝字符。如果未提供 m，则 cp 必须指向一个 C 风格字符串。如果提供了 m，则从 cp 开始必须至少有 m 个 zero 或 one 字符 |
+
+初始化示例代如下：
+
+```CPP
+bitset<13> bitvec1(0xbeef);	// 1111011101111
+bitset<20> bitvec2(0xbeef);	// 00001011111011101111
+bitset<128> bitvec3(~0ULL);	// 0~63 位为 1；63～128 位为 0
+
+bitset<32> bitvec4("1100");	// 2、3 位为 1，剩余两位为 0；如果 string 包含的字符数比 bitset 少，则 bitset 的高位被置为 0
+// 注： string 的下标编号习惯与 bitset 恰好相反： string 中下标最大的字符（最右字符）用来初始化 bitset 中的低位（下标为 0 的二进制位）。当你用一个 string 初始化一个 bitset 时，要记住这个差别
+
+string str("1111111000000011001101");
+bitset<32> bitvec5(str, 5, 4);			// 从 str[5] 开始的四个二进制位，1100 
+bitset<32> bitvec6(str, str.size() - 4);	// 使用最后四个字符
+```
+
+| bitset 操作 |  |
+| ---- | ---- |
+| b.any() | b 中是否存在置位的二进制位 |
+| b.all() | b 中所有位都置位了吗 |
+| b.none() | b 中不存在置位的二进制位吗 |
+| b.count() | b 中置位的位数 |
+| b.size() | 一个 constexpr 函数，返回 b 中的位数 |
+| b.test(pos) | 若 pos 位置的位是置位的，则返回 true，否则返回 false |
+| b.set(pos, v), b.set() | 将位置 pos 处的位设置为 bool 值 v。v 默认为 true。如果未传递实参，则将 b 中所有位置位 |
+| b.reset(), b.reset() | 将位置 pos 处的位抚慰或将 b 中所有位复位 |
+| b.flip(pos), b.filp() | 改变位置 pos 处的位的状态或改变 b 中每一位的状态 |
+| b[pos] | 访问 b 中位置 pos 处的位；如果 b 是 const 的，则当该位置位是 b[pos] 返回一个 bool 值 true，否则返回 false |
+| b.to_ulong(), b.to_ullong() | 返回一个 unsigned long 或一个 unsigned long long 值，其位模式与 b 相同。如果 b 中位模式不能放入指定的结果类型，则抛出一个 overflow_error 异常 |
+| b.to_string(zero, one) | 返回一个 string，表示 b 中的位模式。zero 和 one 的默认值分别为 0 和 1，用来表示 b 中的 0 和 1 |
+| os << b | 将 b 中二进制位打印为字符 1 或 0，打印到流 os |
+| is >> b | 从 is 读取字符存入 b。当下一个字符不是 1 或 0 时，或是已经读入 b.size() 个位时，读取过程停止 |
+
+bitset 操作示例代码如下：
+
+```CPP
+bitset<32> bitvec(1U);
+bool is_set = bitvec.any();		// true，因为最低位为 1
+bool is_not_set = bitvec.none();	// false，因为最低位为 1，所以说存在置位的二进制位
+bool all_set = bitvec.all();		// false，因为只有最低位为 1，所以说并不是所有的位都置为 1 了
+size_t onBits = bitvec.count();		// 返回 1
+size_t sz = bitvec.size();		// 返回 32
+bitvec.flip();				// 翻转 bitvec 中所有为位
+bitvec.reset();				// 将所有位复位
+bitvec.set();				// 将所有位置位
+bitvec.flip(0);				// 翻转第一位
+bitvec.set(bitvec.size() - 1);		// 置位最后一位
+bitvec.set(0, 0);			// 复位第一位
+bitvec.reset(i);			// 复位第 i 位
+bitvec.test(0);				// false，因为第一位是复位的
+bitvec[0] = 0;				// 将第一位复位
+bitvec[31] = bitvec[0];			// 将最后一位设置为与第一位一样
+bitvec[0].flip();			// 翻转第一位
+~bitvec[0];				// 翻转第一位
+bool b = bitvec[0];			// 将 bitvec[0] 的值转换为 bool 类型
+
+bitset<16>  bits;
+cin >> bits;				// 从 cin 读取最多 16 个 0 或 1
+```
+
+### 正则表达式
+
+| 正则表达式库组件 | |
+| ---- | ---- |
+| regex | 表示有一个正则表达式的类 |
+| regex_match | 将一个字符序列与一个正则表达式匹配 |
+| regex_search | 寻找第一个与正则表达式匹配的子序列 |
+| regex_replace | 使用给定格式替换一个正则表达式 |
+| sregex_iterator | 迭代器适配器，调用 regex_search来遍历一个 string 中所有匹配的子串 |
+| smatch | 容器类，保存在 string 中搜索的结果 |
+| ssub_match | string 中匹配的子表达式的结果 |
+
+代码示例如下：
+
+```CPP
+// 查找不在字符 c 之后的字符串 ei
+string pattern("[^c]ei");
+// 我们需要包含 pattern 的整个单词
+pattern = "[[:alpha:]]*" + pattern + "[[:alpha:]]*";
+regex r(pattern);		// 构造用于查找模式的 regex
+smatch results;			// 定义一个对象保存搜索结果
+// 定义一个 string 保存与模式匹配和不匹配的文本
+string test_str = "receipt freind theif receive";
+// 用 r 在 test_str 中查找与 pattern 匹配的子串
+if (regex_search(test_str, results, r))
+	cout << results.str() << endl;
+```
+
+regex (和 wregex) 选项
+
+![](img/regex.png)
+
+### IO 库再探
+
+cout 格式化输出
+
+格式化输出布尔值的格式
+
+```CPP
+cout << "default bool values: " << true << " " << false
+	<< "\nalhpa bool values: " << boolalpha
+	<< true << " " << false << endl;
+
+cout <<< noboolalpha << true << " " << false << endl;
+
+output:
+
+default bool values: 1 0
+alhpa bool values: true false
+1 0
+```
+
+按不同进制进行输出
+
+```CPP
+cout << "default: " << 20 << " " << 1024 << endl;
+cout << "octal: " << oct << 20 << " " << 1024 << endl;
+cout << "hex: " << hex << 20 << " " << 1024 << endl;
+cout << "decimal: " << dec << 20 << " " << 1024 << endl;
+
+output:
+
+default: 20 1024
+octal: 24 2000
+hex: 14 400
+decimal: 20 1024
+
+// 上面的代码虽然是按不同进制进行了输出但是无法区分其格式，设置 showbase 来显示不同数据的格式
+// 前导 0x 表示十六进制
+// 前导 0 表示八进制
+// 无前导字符串表示十进制
+cout << showbase;
+cout << "default: " << 20 << " " << 1024 << endl;
+cout << "in octal: " << oct << 20 << " " << 1024 << endl;
+cout << "in hex: " << hex << 20 << " " << 1024 << endl;
+cout << "in decimal: " << dec << 20 << " " << 1024 << endl;
+cout << noshowbase;
+
+output:
+
+default: 20 1024
+in octal: 024 02000
+in hex: 0x14 0x400
+in decimal: 20 1024
+
+// uppercase 操作符用来输出大写的 X 并将十六进制数字 a-f 以大写输出
+cout << uppercase << showbase << hex
+	<< "printed in hexdecimal: " << 20 << " " << 1024
+	<< nouppercase << noshowbase << dec << endl;
+
+output:
+
+printed in hexadecimal: 0X14 0X400
+```
+
+控制浮点数格式
+
+```CPP
+// cout.precision() 返回当前精度值，cout.precision(x) 用来设置当前精度
+cout << "Precision: " << cout.precision()
+	<< ", Value: " << sqrt(2.0) << endl;
+
+cout.precision(12);
+cout << "Precision: " << cout.precision()
+	<< ", Value: " << sqrt(2.0) << endl;
+
+cout << setprecision(3);
+cout << "Precision: " << cout.precision()
+	<< ", Value: " << sqrt(2.0) << endl;
+
+output:
+
+Precision: 6, Value: 1.41421
+Precision: 12, Value: 1.41421356237
+Precision: 3, Value: 1.41
+```
+
+定义在 iostream 中的操纵符
+
+![](img/format_opcode.png)
+
+输出补白
+
+- setw : 指定下一个数字或字符串值的最小空间
+- left : 表示左对齐输出
+- right : 表示右对齐输出
+- internal : 控制负数的符号的位置，它左对齐符号，右对齐值，用空格填满所有中间空间
+- setfill : 允许指定一个字符代替默认的空格来补白输出
+
+代码示例如下：
+
+```CPP
+int i = -16;
+double d = 3.14159;
+
+cout << "i: " << setw(12) << i << "next col" << "\n"
+	<< "d: " << setw(12) << d << "next col" << "\n";
+
+cout << left
+	<< "i: " << setw(12) << i << "next col" << "\n"
+	<< "d: " << setw(12) << d << "next col" << "\n"
+	<< right;
+
+cout << right
+	<< "i: " << setw(12) << i << "next col" << "\n"
+	<< "d: " << setw(12) << d << "next col" << "\n"
+
+cout << internal
+	<< "i: " << setw(12) << i << "next col" << "\n"
+	<< "d: " << setw(12) << d << "next col" << "\n"
+
+cout << setfill('#')
+	<< "i: " << setw(12) << i << "next col" << "\n"
+	<< "d: " << setw(12) << d << "next col" << "\n"
+	<< setfill(' ');
+
+output:
+
+i:           -16next col
+d:       3.14159next col
+i: -16          next col
+d: 3.14159      next col
+i:           -16next col
+d:       3.14159next col
+i: -          16next col
+d:       3.14159next col
+i:  -#########16next col
+d:  #####3.14159next col
+```
+
+
+
+| 定义在 iomanip 中的操纵符 ｜ ｜
+| ---- | ---- |
+| setfill(ch) | 用 ch 填充空白 |
+| setprecison(n) | 将浮点精度设置为 n |
+| setw(w) | 读或写值的宽度为 w 个字符 |
+| setbase(b) | 将整数输出为 b 进制 |
