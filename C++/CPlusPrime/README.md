@@ -877,3 +877,291 @@ get 和 getline 函数接受相同的参数，它们的行为类似但不相同�
 | seekg(pos), seekp(pos) | 在一个输入流或输出流中将标记重定位到给定的绝对地址。pos 通常是前一个 tellg 或 tellp 返回的值 |
 | seekp(off, from), seekg(off, from) | 在一个输入流或输出流中将标记定位到 from 之前或之后 off 个字符，from可以是下列值之一 (beg，偏移量相对于流开始位置；cur，偏移量相对于流当前位置；end，偏移量相对于流结尾位置) |
 
+## 异常处理 命名空间 多重继承与虚继承
+
+### 异常
+
+C++ 中通过**抛出**一条表达式来**引发**一个异常。被抛出的表达式的类型以及当前的调用链共同决定了哪段处理代码将被用来处理该异常
+
+当执行一个 throw 时，跟在 throw 后面的语句将不再被执行。相反，程序的控制权从 throw 转移到与之匹配的 catch 模块。相反，程序的控制权从 throw 转移到与之匹配的 catch 模块。
+
+控制权从一处转移到另一处，这有两个重要的含义：
+- 沿着调用链的函数可能会提早退出
+- 一旦程序开始执行异常处理代码，则沿着调用链创建的对象将被销毁
+
+栈展开：栈展开过程沿着嵌套函数的调用连不断查找，直到找到了与异常匹配的 catch 子句为止：或者也可能一直没找到匹配的 catch，则退出主函数后查找过程终止
+
+当找不到匹配的 catch 时，程序将调用标准库函数 terminate，terminate 负责终止程序的执行过程
+
+一个异常如果没有被捕获，则它将终止当前的程序
+
+栈展开的过程中是会将在 try 语句块中的分配的资源给释放掉的，如果是内置类型那么就不需要我们过多的关注，但是如果是类类型的话在释放其分配的资源时是会自动调用该类型的析构函数的，并且析构函数不应该抛出不能被它自身处理的异常。换句话说，如果析构函数需要执行某个可能抛出异常的操作，则该操作应该被放置在一个 try 语句块中，并且在析构函数内部得到处理
+
+在栈展开中，运行类类型的局部对象的析构函数。因为这些析构函数是自动执行的，所以它们不应该抛出异常。一旦在栈展开的过程中析构函数抛出了异常，并且析构函数自身没能捕获到该异常，则程序将被终止。
+
+异常对象是一种特殊的对象，编译器使用异常抛出表达式来对异常对象进行拷贝初始化。
+
+当我们抛出一条表达式时，该表达式的静态编译时类型决定了异常对象的类型
+
+catch 子句中的异常声明 看起来像是只包含一个形参的函数形参列表。像在形参列表中一样，如果 catch 无需访问抛出的表达式的话，则我们可以忽略捕获形参的名字
+
+异常声明的静态类型将决定 catch 语句所能执行的操作。如果 catch 的参数是基类类型，则 catch 无法使用发生类特有的任何成员
+
+通常情况下，如果 catch 接受的异常与某个继承体系有关，则最好将该 catch 的参数定义成引用类型
+
+越是专门的 catch 越应该置于整个 catch 列表的前端
+
+异常与 catch 异常声明的匹配规则
+- 允许从非常量向常量的类型转换，也就是说，一条非常量对象的 throw 语句可以匹配一个接受常量引用的 catch 语句
+- 允许从派生类向基类的类型转换
+- 数组被转换成指向数组（元素）类型的指针，函数被转换成指向该函数类型的指针
+
+除了上面写的规则外，包括标准算数类型转换和类类型转换在内，其他所有转换规则都不能匹配 catch 的过程中使用
+
+如果在多个 catch 语句的类型之间存在着继承关系，则我们应该把继承链最底端的类放在前面，而将继承链最顶端的类放在后面
+
+重新抛出示例代码如下：
+
+```CPP
+catch (my_error &eObj) {			// 引用类型
+	eObj.status = errCodes::serverErr;	// 修改了异常对象
+	throw;					// 异常对象的 status 成员是 serverErr
+} catch (other_error eObj) {			// 非引用类型
+	eObj.status = errCodes::badErr;		// 只修改了异常对象的局部副本
+	throw;					// 异常对象的 status 成员没有改变
+}
+```
+
+捕获所有异常的处理代码示例如下：
+
+```CPP
+void manip() {
+	try {
+		// 这里的操作将引发并抛出一个异常
+	}
+	catch (...) {
+		// 处理异常的某些特殊操作
+		throw
+	}
+}
+```
+
+catch(...) 既能单独出现，也能与其他几个 catch 语句一起出现，但是当 catch(...)  与其他几个 catch 语句一起出现时，则 catch(...) 必须在最后的位置。出现在捕获所有异常语句后面的 catch 语句将永远不会被匹配
+
+
+**try 语句块与构造函数**
+
+示例代码如下：
+
+```CPP
+template <typename T>
+Blob<T>::Blob(std::initializer_list<T> il) try : 
+	data(std::make_shared<std::vector<T>>(il)) {
+		/* 空函数体 */
+	} catch(const std::bad_alloc &e) { handle_out_of_memory(e); }
+```
+
+noexcept 说明符的示例代码如下，意思就是说 recoup 这个函数是不会抛出异常的
+
+```CPP
+void recoup(int) noexcept;
+```
+
+违反异常说明的示例代码：
+
+```CPP
+void f() noexecpt {		// 承诺不会抛出异常
+	throw exception();	// 违反了异常说明
+}
+```
+
+异常说明的实参：
+
+```CPP
+void recoup(int) noexcept(true);	// recoup 不会抛出异常
+void alloc(int) noexcept(false);	// alloc 可能会抛出异常
+```
+
+noexcept 运算符
+
+noexcept 说明符的实参常常与 noexcept 运算符(noexcept opreator)混合使用。noexcept 运算符是一个一元运算符，它的返回值是一个 bool 类型的右值常量表达式，用于表示给定的表达式是否会抛出异常
+
+代码示例如下：
+
+```CPP
+noexcept(recoup(i))	// 如果 recoup 不抛出异常则结果为 true；否则结果为 false
+noexcept(e)
+// 当 e 调用的所有函数都做了不抛出说明且 e 本身不含有 throw 语句时，上述表达式为 true；否则 noexcept(e) 返回 false
+void f() noexcept(noexcept(g()));	// f 和 g 的异常说明一致
+```
+
+注意：noexcept 有两层含义：当跟在函数参数列表后面时它是异常说明符；而当作为 noexcept 异常说明的 bool 实参出现时，他是一个运算符
+
+**异常说明与指针、虚函数和拷贝**
+
+代码示例如下：
+
+```CPP
+void (*pf1)(int) noexcept = recoup;	// recoup 和 pf1 都承诺不会抛出异常
+void (*pf2)(int) = recoup;		// pf2 可能会抛出异常
+
+*pf1 = alloc;				// 错误：alloc 可能抛出异常，但是 pf1 已经说明了其不会抛出异常
+*pf2 = alloc;				// 正确：pf2 和 alloc 都可能抛出异常
+```
+
+如果一个虚函数承诺了不会抛出异常，那么后续派生出来的类的虚函数同样需要承诺不能抛出异常；反之亦然，如果虚函数允许抛出异常，则派生类的对应函数既可以允许抛出异常，也可以不允许抛出异常，示例代码如下：
+
+```CPP
+class Base {
+public:
+	virtual double f1(double) noexcept;	// 承诺不抛出异常
+	virtual int f2() noexcept(false);	// 可能抛出异常
+	virtual void f3();			// 可能抛出异常
+};
+
+class Derived : Base {
+public:
+	double f1(double);		// 错误，Base::f1 承诺不会抛出异常
+	int f2() noexcept(false);	// 正确：与 Base::f2 的异常说明一致
+	void f3() noexcept;		// 正确：与 Base::f3 的异常说明一致
+}
+```
+
+标准 exception 类层次
+
+![](img/exception.png)
+
+### 命名空间
+
+代码示例如下：
+
+```CPP
+namespace cplusplus_primer {
+	class Sales_data { /* ... */ };
+	Sales_data operator+(const Sales_data&, const Sales_data&);
+
+	class Query {};
+	class Query_Base {};
+} // 命名空间结束后无需分号，这一点与块类似 
+```
+
+命名空间的一部分成员的作用是定义类，以及声明作为类接口的函数即对象，则这些成员应置于头文件中，这些头文件将被包含在使用了这些成员的文件中
+
+命名空间成员的定义部分则置于另外的源文件中
+
+定义多个类型不相关的命名空间应该使用单独的文件分别表示每个类型（或关联类型构成的集合）
+
+全局命名空间的使用方法如下：
+
+```CPP
+::member_name
+```
+
+嵌套的命名空间示例代码如下：
+
+```CPP
+namespace cplusplus_primer {
+	namespace QueryLib {
+		class Query { /* ... */ };
+		Query operator&(const Query&, const Query&);
+		// ...
+	}
+
+	namespace Bookstore {
+		class Quote { /* ... */ };
+		Query Disc_quote : public Quote { /* ... */ };
+		// ...
+	}
+}
+
+cplusplus_primer::QueryLib::Query;
+```
+
+内联命名空间和普通命名空间不同，内联命名空间中的名字可以直接被外层命名空间直接使用。也就是说我们无需在内联命名空间的名字前添加表示该命名空间的前缀，通过外层命名空间就可以直接访问他
+
+在标准 C++ 引入命名空间的概念之前，程序需要将名字声明为 static 的以使得其对整个文件有效。在文件中静态声明的做法是从 C 中继承来的，在 C 语言中，声明为 static 的全局实体在其所在的文件外不可见
+在文件中进行静态声明的做法已经被 C++ 标准取消了，现在的做法是使用未命名的命名空间
+
+命名空间的别名示例代码如下：
+
+```CPP
+namespace cplusplus_primer { /* ... */};
+namespace primer = cplusplus_primer;
+
+namespace Qlib = cplusplus_prime::QueryLib;
+Qlib::Query q;
+```
+
+### 多重继承与虚继承
+
+派生类构造函数初始化所有基类示例代码如下：
+
+```CPP
+Panda::Panda(std::string name, bool onExhibit)
+	: Bear(name, onExhibit, "Panda"),
+	  Endangered(Endangered::critical) {}
+
+Panda::Panda()
+	: Endangered(Endangered::critical) {}
+```
+
+派生类的构造函数初始值列表将实参分别传递给每个直接基类。其中基类的构造顺序与派生列表基类的出现顺序保持一致，而与派生类构造函数初始值列表中基类的顺序无关。
+
+C++ 11 中允许派生类从一个或几个基类中继承构造函数。但是如果从多个基类中继承了相同的构造函数（即形参列表完全相同），则程序将产生错误，示例代码如下：
+
+```CPP
+struct Base1 {
+	Base1() = default;
+	Base1(const std::string &);
+	Base1(std::shared_ptr<int>);
+};
+
+struct Base2 {
+	Base2() = default;
+	Base2(const std::string &);
+	Base2(int);
+};
+
+struct D1 : public Base1, public Base2 {
+	using Base1::Base1;
+	using Base2::Base2;
+};
+```
+
+解决上面问题的方法就是，如果一个类从他的多个基类中继承了相同的构造函数，则这个类必须为该构造函数定义它自己的版本，示例代码如下：
+
+```CPP
+struct D2 : public Base1, public Base2 {
+	using Base1::Base1;
+	using Base2::Base2;
+
+	D2(const string &s) : Base1(s), Base2(s) {}
+	D2() = default;
+}
+```
+
+注意：**析构函数的调用顺序正好与构造函数相反**
+
+**多重继承的派生类的拷贝与移动操作**
+
+与只有一个基类的继承一样，多重继承的派生类如果定义了自己的拷贝/赋值构造函数和赋值运算符，则必须在完整的对象上执行拷贝、移动或赋值操作。只有当派生类使用的是合成版本的拷贝、移动或赋值成员时，才会自动对其基类部分执行这些操作。在合成的拷贝控制成员中，每个基类分别使用自己的对应成员阴式地完成构造、赋值或销毁等工作
+
+**虚继承**
+
+使用虚基类示例代码如下：
+
+```CPP
+class Raccoon : public virtual ZooAnimal { /* ... */ };
+class Bear : virtual public ZooAnimal { /* ... */ };
+
+class Panda : public Bear, public Raccoon, public Endangered {
+};
+```
+
+虚基类成员的可见性
+
+因为在每个共享的虚基类中只有唯一一个共享的子对象，所以该基类的成员可以被直接访问，并且不会产生二义性。此外，如果虚基类的成员只被一条派生路径覆盖，则我们仍然可以直接访问这个被覆盖的成员。但是如果成员被多余一个基类覆盖，则一般情况下派生类必须为该成员自定义一个新版本
+
+虚继承的对象的构造方式
+
+首先使用提供给最底层派生类构造函数的初始值初始化该对象的虚基类子部分，接下来按照直接基类在派生列表中出现的次序依次对其进行初始化，调用析构函数的顺序正好与调用构造函数的顺序相反
