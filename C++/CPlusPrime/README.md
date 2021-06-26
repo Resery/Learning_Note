@@ -1,8 +1,91 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**目录**  
+
+- [C++ Prime Plus 笔记](#c-prime-plus-%E7%AC%94%E8%AE%B0)
+  - [概述](#%E6%A6%82%E8%BF%B0)
+  - [模版](#%E6%A8%A1%E7%89%88)
+    - [模版实参推断](#%E6%A8%A1%E7%89%88%E5%AE%9E%E5%8F%82%E6%8E%A8%E6%96%AD)
+      - [类型转换与模版类型参数](#%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E4%B8%8E%E6%A8%A1%E7%89%88%E7%B1%BB%E5%9E%8B%E5%8F%82%E6%95%B0)
+      - [使用相同模版参数类型的函数形参](#%E4%BD%BF%E7%94%A8%E7%9B%B8%E5%90%8C%E6%A8%A1%E7%89%88%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E7%9A%84%E5%87%BD%E6%95%B0%E5%BD%A2%E5%8F%82)
+      - [正常类型转换应用于普通函数实参](#%E6%AD%A3%E5%B8%B8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E5%BA%94%E7%94%A8%E4%BA%8E%E6%99%AE%E9%80%9A%E5%87%BD%E6%95%B0%E5%AE%9E%E5%8F%82)
+    - [函数模版显式实参](#%E5%87%BD%E6%95%B0%E6%A8%A1%E7%89%88%E6%98%BE%E5%BC%8F%E5%AE%9E%E5%8F%82)
+      - [指定显示模版实参](#%E6%8C%87%E5%AE%9A%E6%98%BE%E7%A4%BA%E6%A8%A1%E7%89%88%E5%AE%9E%E5%8F%82)
+      - [正常类型转换应用于显示指定的实参](#%E6%AD%A3%E5%B8%B8%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E5%BA%94%E7%94%A8%E4%BA%8E%E6%98%BE%E7%A4%BA%E6%8C%87%E5%AE%9A%E7%9A%84%E5%AE%9E%E5%8F%82)
+      - [尾置返回类型与类型转换](#%E5%B0%BE%E7%BD%AE%E8%BF%94%E5%9B%9E%E7%B1%BB%E5%9E%8B%E4%B8%8E%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2)
+      - [进行类型转换的标准库模版类](#%E8%BF%9B%E8%A1%8C%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2%E7%9A%84%E6%A0%87%E5%87%86%E5%BA%93%E6%A8%A1%E7%89%88%E7%B1%BB)
+      - [函数指针和实参推断](#%E5%87%BD%E6%95%B0%E6%8C%87%E9%92%88%E5%92%8C%E5%AE%9E%E5%8F%82%E6%8E%A8%E6%96%AD)
+      - [模版实参推断和引用](#%E6%A8%A1%E7%89%88%E5%AE%9E%E5%8F%82%E6%8E%A8%E6%96%AD%E5%92%8C%E5%BC%95%E7%94%A8)
+        - [从左值引用函数参数推断类型](#%E4%BB%8E%E5%B7%A6%E5%80%BC%E5%BC%95%E7%94%A8%E5%87%BD%E6%95%B0%E5%8F%82%E6%95%B0%E6%8E%A8%E6%96%AD%E7%B1%BB%E5%9E%8B)
+        - [从右值引用函数推断类型](#%E4%BB%8E%E5%8F%B3%E5%80%BC%E5%BC%95%E7%94%A8%E5%87%BD%E6%95%B0%E6%8E%A8%E6%96%AD%E7%B1%BB%E5%9E%8B)
+        - [引用折叠和右值引用参数](#%E5%BC%95%E7%94%A8%E6%8A%98%E5%8F%A0%E5%92%8C%E5%8F%B3%E5%80%BC%E5%BC%95%E7%94%A8%E5%8F%82%E6%95%B0)
+        - [编写接受右值引用参数的模版函数](#%E7%BC%96%E5%86%99%E6%8E%A5%E5%8F%97%E5%8F%B3%E5%80%BC%E5%BC%95%E7%94%A8%E5%8F%82%E6%95%B0%E7%9A%84%E6%A8%A1%E7%89%88%E5%87%BD%E6%95%B0)
+        - [理解 std::move](#%E7%90%86%E8%A7%A3-stdmove)
+      - [转发](#%E8%BD%AC%E5%8F%91)
+      - [重载与模版](#%E9%87%8D%E8%BD%BD%E4%B8%8E%E6%A8%A1%E7%89%88)
+      - [可变参数模版](#%E5%8F%AF%E5%8F%98%E5%8F%82%E6%95%B0%E6%A8%A1%E7%89%88)
+        - [sizeof... 运算符](#sizeof-%E8%BF%90%E7%AE%97%E7%AC%A6)
+        - [编写可变参数函数模版](#%E7%BC%96%E5%86%99%E5%8F%AF%E5%8F%98%E5%8F%82%E6%95%B0%E5%87%BD%E6%95%B0%E6%A8%A1%E7%89%88)
+      - [包扩展](#%E5%8C%85%E6%89%A9%E5%B1%95)
+        - [转发参数包](#%E8%BD%AC%E5%8F%91%E5%8F%82%E6%95%B0%E5%8C%85)
+      - [模版特例化](#%E6%A8%A1%E7%89%88%E7%89%B9%E4%BE%8B%E5%8C%96)
+        - [模版偏特化](#%E6%A8%A1%E7%89%88%E5%81%8F%E7%89%B9%E5%8C%96)
+  - [标准库特设设施](#%E6%A0%87%E5%87%86%E5%BA%93%E7%89%B9%E8%AE%BE%E8%AE%BE%E6%96%BD)
+    - [tuple 类型](#tuple-%E7%B1%BB%E5%9E%8B)
+    - [bitset 类型](#bitset-%E7%B1%BB%E5%9E%8B)
+    - [正则表达式](#%E6%AD%A3%E5%88%99%E8%A1%A8%E8%BE%BE%E5%BC%8F)
+    - [IO 库再探](#io-%E5%BA%93%E5%86%8D%E6%8E%A2)
+      - [cout 格式化输出](#cout-%E6%A0%BC%E5%BC%8F%E5%8C%96%E8%BE%93%E5%87%BA)
+  - [异常处理 命名空间 多重继承与虚继承](#%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86-%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4-%E5%A4%9A%E9%87%8D%E7%BB%A7%E6%89%BF%E4%B8%8E%E8%99%9A%E7%BB%A7%E6%89%BF)
+    - [异常](#%E5%BC%82%E5%B8%B8)
+    - [命名空间](#%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4)
+    - [多重继承与虚继承](#%E5%A4%9A%E9%87%8D%E7%BB%A7%E6%89%BF%E4%B8%8E%E8%99%9A%E7%BB%A7%E6%89%BF)
+  - [特殊工具与技术](#%E7%89%B9%E6%AE%8A%E5%B7%A5%E5%85%B7%E4%B8%8E%E6%8A%80%E6%9C%AF)
+    - [控制内存分配](#%E6%8E%A7%E5%88%B6%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D)
+    - [运行时类型识别](#%E8%BF%90%E8%A1%8C%E6%97%B6%E7%B1%BB%E5%9E%8B%E8%AF%86%E5%88%AB)
+    - [枚举类型](#%E6%9E%9A%E4%B8%BE%E7%B1%BB%E5%9E%8B)
+    - [类成员指针](#%E7%B1%BB%E6%88%90%E5%91%98%E6%8C%87%E9%92%88)
+    - [嵌套类](#%E5%B5%8C%E5%A5%97%E7%B1%BB)
+    - [union: 一种节省空间的类](#union-%E4%B8%80%E7%A7%8D%E8%8A%82%E7%9C%81%E7%A9%BA%E9%97%B4%E7%9A%84%E7%B1%BB)
+    - [局部类](#%E5%B1%80%E9%83%A8%E7%B1%BB)
+    - [固有的不可移植的特性](#%E5%9B%BA%E6%9C%89%E7%9A%84%E4%B8%8D%E5%8F%AF%E7%A7%BB%E6%A4%8D%E7%9A%84%E7%89%B9%E6%80%A7)
+    - [位域](#%E4%BD%8D%E5%9F%9F)
+    - [volatile](#volatile)
+    - [链接指示： extern "C"](#%E9%93%BE%E6%8E%A5%E6%8C%87%E7%A4%BA-extern-c)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # C++ Prime Plus 笔记
 
 ## 概述
 
-此文档用来记录阅读 C++ Prime Plus 中遇到的一些重点，主要作为自己日后复习的笔记，笔记从模版开始记录，之前的内容会慢慢补充
+此文档用来记录阅读 C++ Prime Plus 中遇到的一些重点，主要作为自己日后复习的笔记，笔记从模版开始记录，模版之前的内容会慢慢补充，在补充之前先使用另一人的系列文章来作为参考的笔记，个人感觉这一系列的文章内容质量还是可以的，很言简意骇。
+
+## 引用笔记
+
+第一章：https://cloud.tencent.com/developer/article/1670670
+第二章：https://cloud.tencent.com/developer/article/1670671
+第三章：https://cloud.tencent.com/developer/article/1670672
+第四章：https://cloud.tencent.com/developer/article/1670673
+第五章：https://cloud.tencent.com/developer/article/1670674
+第六章：https://cloud.tencent.com/developer/article/1670676
+第七章：https://cloud.tencent.com/developer/article/1670678
+第一部分总结：https://cloud.tencent.com/developer/article/1670679
+第八章：https://cloud.tencent.com/developer/article/1670680
+第九章：https://cloud.tencent.com/developer/article/1670694
+第十章：https://cloud.tencent.com/developer/article/1670695
+第十一章：https://cloud.tencent.com/developer/article/1670696
+第十二章：https://cloud.tencent.com/developer/article/1670697
+第二部分总结：https://cloud.tencent.com/developer/article/1670698
+第十三章：https://cloud.tencent.com/developer/article/1670700
+第十四章：https://cloud.tencent.com/developer/article/1670701
+第十五章：https://cloud.tencent.com/developer/article/1670702
+第十六章：https://cloud.tencent.com/developer/article/1670705
+第三部分总结：https://cloud.tencent.com/developer/article/1670706
+第十七章：https://cloud.tencent.com/developer/article/1670707
+第十八章：https://cloud.tencent.com/developer/article/1670708
+第十九章：https://cloud.tencent.com/developer/article/1670709
+第四部分总结：https://cloud.tencent.com/developer/article/1670710
 
 ## 模版
 
@@ -1165,3 +1248,499 @@ class Panda : public Bear, public Raccoon, public Endangered {
 虚继承的对象的构造方式
 
 首先使用提供给最底层派生类构造函数的初始值初始化该对象的虚基类子部分，接下来按照直接基类在派生列表中出现的次序依次对其进行初始化，调用析构函数的顺序正好与调用构造函数的顺序相反
+
+## 特殊工具与技术
+
+### 控制内存分配
+
+标准库中定义了 operator new 函数和 operator delete 函数的 8 个重载版本。其中前 4 个版本可能抛出 bad_alloc 异常，后 4 个版本不会抛出异常
+
+```CPP
+void *operator new(size_t);
+void *operator new[](size_t);
+void *operator delete(void *) noexecpt;
+void *operator delete[](void *) noexecpt;
+
+void *operator new(size_t, nothrow_t &) noexecpt;
+void *operator new[](size_t, nothrow_t &) noexecpt;
+void *operator delete(void *, nothrow_t &) noexecpt;
+void *operator delete[](void *, nothrow_t &) noexecpt;
+```
+
+下面这个函数无论如何都不能被用户重载
+
+```CPP
+void *operator new(size_t, void *);
+```
+
+一条 new 表达式执行过程总是先调用 operator new 函数以获取内存空间，然后在得到的内存空间中构造对象。与之相反，一条 delete 表达式的执行过程总是先销毁对象，然后调用 operator delete 函数释放对象所占的空间
+
+用户自定义 operator new 函数和 operator delete 函数的目的在于改变内存分配的方式，但是不管怎样，我们都不能改变 new 运算符和 delete 运算符的基本含义
+
+operator new 函数和 operator delete 函数是不会调用 construct 构造函数的，但是我们与此同时想要初始化一些内容的话，就需要使用**定位 new 来达到这一效果**
+
+定位 new 的使用方法如下，以及示例代码如下：
+
+```CPP
+new (place_address) type
+new (place_address) type (initializers)
+new (place_address) type [size]
+new (place_address) type [size] { braced initializer list }
+
+char buffer[10];
+int * var = NULL;
+var = new (buffer) int[10] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+std::cout << std::showbase << std::hex << var << " " << &buffer
+	  << " " << *(var + 5) << std::endl << std::noshowbase;
+
+output:
+
+0x16f677098 0x16f677098 0x6
+```
+
+调用析构函数会销毁对象但是不会释放对象所占的内存
+
+### 运行时类型识别
+
+运行时类型识别（RTII）的功能由两个运算符实现：
+- typeid 运算符，用于返回表达式的类型
+- dynamic_cast 运算符，用于将基类的指针或引用安全地转换成派生类的指针或引用
+
+dynamic_cast 的使用形式如下所示，其中 type 必须为类类型，并且通常情况下该类型应该含有虚函数：
+
+```CPP
+dynamic_cast<type *> (e)
+dynamic_cast<type &> (e)
+dynamic_cast<type &&> (e)
+```
+
+在上面所有的形式中，e 的类型必须符合以下三个条件中的任意一个：
+1. e 的类型是目标 type 的公有派生类
+2. e 的类型是目标 type 的公有基类
+3. e 的类型就是目标 type 的类型
+
+举个简单的例子，假定 Base 类至少含有一个虚函数，Derived 是 Base 的公有派生类。如果有一个指向 Base 的指针 bp，则我们可以在运行时将它转换成指向 Derived 的指针，具体代码如下：
+
+```CPP
+if (Derived * dp = dynamic_cast<Derived *>(bp)) {
+	// 使用 dp 指向的 Derived 对象
+} else {// bp 指向一个 Base 对象
+	// 使用 bp 指向的 Base 对象
+}
+```
+
+我们可以对空指针执行 dynamic_cast，结果是所需类型的空指针
+
+在条件部分执行 dynamic_cast 操作可以确保类型转换和结果检查在同一条表达式中完成
+
+引用类型的 dynamic_cast 示例代码如下：
+
+```CPP
+void f(const Base &b) {
+	try {
+		const Derived & d = dynamic_cast<const Derived &>(b);
+		// 使用 b 中引用的 Derived 对象
+	} catch (bad_cast) {
+		// 处理类型转换失败的情况
+	}
+}
+```
+
+typeid 运算符可以作用于任意类型的表达式。和往常一样，顶层 const 会被忽略，如果表达式是一个引用，则 typeid 返回该引用所引对象的类型。不过当 typeid 作用于数组或函数时，并不会执行向指针的标准类型转换。也就是说，如果我们对数组 a 执行 typeid(a)，则所得到的结果为数组类型而非指针类型
+
+typeid 示例代码如下，并且需要注意的是 typeid 应该作用于对象，因此我们应该使用 *bp 而不是 bp：
+
+```CPP
+Derived * dp = new Derived;
+Base * bp = dp;
+
+if (typeid(*dp) == typeid(*bp)) {
+	// bp 和 dp 指向同一类型的对象
+}
+if (typeid(*bp) == typeid(Derived)) {
+	// bp 实际指向 Derived 对象
+}
+```
+
+**注：当 typeid 作用于指针时（而非指针所指的对象），返回的结果是该指针的静态编译时类型**
+
+| type_info 的操作 |  |
+| ---- | ---- |
+| t1 == t2 | 如果 type_info 对象 t1 和 t2 表示同一种类型，返回 true；否则返回 false |
+| t1 != t2 | 如果 type_info 对象 t1 和 t2 表示不同的类型，返回 true；否则返回 false |
+| t.name() | 返回一个 C 风格的字符串，表示类型名字的可打印形式。类型名字的生成方式因系统而异 |
+| t1.before(t2) | 返回一个 bool 值，表示 t1 是否位于 t2 之前。before 所采用的顺序关系是依赖于编译器的 |
+
+type_info 类没有默认构造函数，而且它的拷贝和移动构造函数以及赋值运算符都被定义成删除的，因此，我们无法定义或拷贝 type_info 类型的对象，也不能为 type_info 类型的对象赋值。创建 type_info 对象的唯一途径是 typeid 运算符。
+
+### 枚举类型
+
+定义限定作用域枚举类型，示例代码如下：
+
+```CPP
+enum class open_modes {input, output, append};
+```
+
+定义非限定作用域枚举类型，示例代码如下：
+
+```CPP
+enum color {red, yellow, green};
+enum {floatPrec = 6, doublePrec = 10, double_doublePrec = 10};
+```
+
+在限定作用域的枚举类型中，枚举成员的名字遵循常规的作用域准则，并且在枚举类型的作用域外是不可访问的。与之相反，非限定作用域的枚举类型中，枚举成员的作用域与枚举类型本身的作用域相同：
+
+```CPP
+enum color {red, yellow, green};		// 不限定作用域的枚举类型
+enum stoplight {red, yellow, green};		// 错误：重复定义了枚举成员
+enum class peppers {red, yellow, green};	// 正确：枚举成员被隐藏了
+color eyes = green;				// 正确：不限定不作用的枚举类型的成员位于有效的作用域中
+peppers p = green;				// 错误：peppers 的枚举成员不在有效的作用域中
+						// color::green 在有效的作用域中，但是类型错误
+color hair = color::red;			// 正确：允许显式地访问枚举成员
+peppers p2 = peppers::red;			// 正确：使用 peppers 的 red
+```
+
+枚举成员是 const，因此在初始化枚举成员时提供的初始值必须是常量表达式
+
+**和类一样，枚举也定义新的类型**
+
+只要 enum 有名字，我们就能定义并初始化该类型的成员。要想初始化 enum 对象或者为 enum 对象赋值，必须使用该类型的一个枚举成员或者该类型的另一个对象：
+
+```CPP
+open_modes om = 2;	// 错误：2 不属于类型 open_modes
+om = open_modes::input;	// 正确：input 是 open_modes 的一个成员
+```
+
+一个不限定作用域的枚举类型的对象或枚举成员自动地转换成整型。因此，我们可以在任何需要整型值的地方使用它们
+
+```CPP
+int i = color::red;	// 正确：不限定作用域的枚举类型的枚举成员隐式地转换成 int
+int j = color::red;	// 错误：限定作用域的枚举类型不会进行隐式转换
+```
+
+指定 enum 的大小的示例代码如下，enum 在没有显式的指明类型时，则默认情况下限定作用域的 enum 成员类型是 int
+
+```CPP
+enum intValues : unsigned long long {
+	charTyp = 255, shortTyp = 65535, intTyp = 65535,
+	longTyp = 4294967295UL,
+	long_long_Typ = 18446744073709551615ULL
+};
+```
+
+我们可以将一个不限定作用域的枚举类型的对象或枚举成员传给整型形参。此时，enum 的值提升成 int 或更大的整型，实际提升的结果由枚举类型的潜在类型决定，示例代码如下：
+
+```CPP
+void newf(unsigned char);
+void newf(int);
+unsigned char uc = VIRTUAL;
+newf(VIRTUAL);		// 调用 newf(int)
+newf(uc);		// 调用 newf(unsigned cha)
+```
+
+### 类成员指针
+
+为了解释成员指针的原理，我们使用下面的类来作为例子：
+
+```CPP
+class Screen {
+public:
+	typedef std::string::size_type pos;
+	char get_cursor() const { return contents[cursor] };
+	char get() const;
+	char get(pos ht, pos wd) const;
+private:
+	std::string contents;
+	pos cursor;
+	pos height, width;
+}
+```
+
+声明与定义一个类成员指针示例代码如下：
+
+```CPP
+// 一个指向 Screen 类的 const string 成员的指针
+const string Screen::*pdata;
+// 当我们初始化一个成员指针（或向他赋值）时，需要指定它所指的成员
+pdata = &Screen::contents;
+// 利用 C++ 11 新标准声明成员指针
+auto pdata = &Screen::contents;
+```
+
+使用数据成员指针示例代码如下：
+
+```CPP
+Screen myScreen, *pScreen = &myScreen;
+
+auto s = myScreen.*pdata;
+
+s = pScreen->*pdata;
+```
+
+**返回数据成员指针的函数**，在下面的代码中我们为 Screen 添加了一个静态成员，令其返回指向 contents 成员的指针。这里我们还是可以用从右至左的读法来理解 data 的返回值，* 读成 point to，也就是这样的 point to Screen‘s const std::string，指向 Screen 类型的 const string 指针，其中 data() 返回一个指向 Screen 类的 contents 成员的指针，示例代码如下：
+
+```CPP
+class Screen {
+public:
+	// data 是一个静态成员，返回一个成员指针
+	static const std::string Screen::*data() {
+		return &Screen::contents;
+	}
+	// 其他成员与之前的版本一致
+}
+
+const string Screen::*pdata = Screen::data();
+
+auto s = myScreen.*pdata;
+```
+
+声明一个成员函数指针的示例代码如下：
+
+```CPP
+auto pmf = &Screen::get_cursor;
+```
+
+当成员存在重载的问题，则我们必须显式地声明函数类型以明确指出我们想用的是哪个函数。例如，我们可以声明一个函数，令其指向含有两个形参的 get，和普通函数指针不同的是，在成员函数和指向该成员的指针之间不存在自动转换规则：
+
+```CPP
+char (Screen::*pmf2)(Screen::pos, Screen::pos) const;
+pmf2 = &Screen::get;
+```
+
+出于优先级的考虑，上述声明中 Screen::* 两端的括号必不可少。如果没有这对括号的话，编译器会认为该声明是一个（无效的）函数声明，如下面这样：
+
+```CPP
+// 错误：非成员函数 p 不能使用 const 限定符
+char Screen::*p(Screen::pos, Screen::pos) const;
+```
+
+**使用成员函数指针**
+
+和使用指向数据成员的指针一样，我们使用 .* 或者 ->* 运算符作用于指向成员函数的指针，以调用类的成员函数：
+
+```CPP
+Screen myScreen, *pScreen = &myScreen;
+
+char c1 = (pScreen->*pmf)();
+
+char c2 = (muScreen.*pmf2)(0, 0);
+```
+
+在上述代码中之所以 (myScreen->*pmf)() 和 (pScreen.*pmf2)(0, 0) 的括号必不可少，原因是调用运算符的优先级要高于指针指向成员运算符的优先级
+
+声明成员指针函数标的示例代码如下：
+
+```CPP
+class Screen {
+public:
+	Screen& home();
+	Screen& forward();
+	Screen& back();
+	Screen& up();
+	Screen& down();
+
+public:
+	using Action = Screen& (Screen::*)();
+	enum Directions = { HOME, FORWARD, BACK, UP, DOWN };
+	Screen& move(Directions);
+
+private:
+	static Action Menu[];	// 函数表
+};
+
+Screen& Screen::move(Directions cm) {
+	return (this->*Menu[cm])();	// Menu[cm] 指向一个成员函数
+}
+
+Screen::Action Screen::Munu[] = {
+	&Screen::home,
+	&Screen::forward,
+	&Screen::back,
+	&Screen::up,
+	&Screen::down,
+};
+
+Screen myScreen;
+myScreen.move(Screen::HOME);
+myScreen.move(Screen::DOWN);
+```
+
+### 嵌套类
+
+嵌套类是一个独立的类，与外层类基本没有什么关系。特别是，外层类的对象和嵌套类的对象是相互独立的。在嵌套类的对象中不包含任何外层定义的成员；类似的，在外层类的对象中也不包含任何嵌套类定义的成员。
+
+嵌套类的名字在外层类作用域中是可见的，在外层类作用域之外不可见。和其他嵌套的名字一样，嵌套类的名字不会和别的作用域中的同一个名字冲突
+
+嵌套类中成员的种类与非嵌套类是一样的。和其他类类似，嵌套类也能使用访问限定符来控制外界对其成员的访问全县。外层类对嵌套类的成员没有特殊的访问权限，同样，嵌套类对外层类的成员也没有特殊的访问权限。
+
+声明与定义一个嵌套类的示例代码如下：
+
+```CPP
+class TextQuery {
+public:
+	class QueryResult;	// 嵌套类稍后定义
+};
+
+class TextQuery::QueryResult {
+	friend std::ostream& print(std::ostream&, const QueryResult&);
+public:
+	QueryResult(std::string,
+		    std::shared_ptr<std::set<line_no>>,
+		    std::shared_ptr<std::vector<std::string>>);
+};
+```
+
+定义嵌套类的成员，下面的代码展示了如何在嵌套类外部定义嵌套类的构造函数
+
+```CPP
+TextQuery::QueryResult::QueryResult(string s,
+					shared_ptr<set<line_no>> p,
+					shared_ptr<vector<string>> f):
+					sought(s), lines(p), file(f) {}
+```
+
+嵌套类的静态成员定义的示例代码如下：
+
+```CPP
+int TextQuery::QueryResult::static_mem = 1024;
+```
+
+**嵌套类和外层类是相互独立的**
+
+尽管嵌套类定义在其外层类的作用域中，但是读者必谨记外层类的对象和嵌套类的对象没有任何关系。嵌套类的对象只包含嵌套类定义的成员：同样，外层类的对象只包含外层类定义的成员，在外层类对象中不会有任何嵌套类的成员
+
+### union: 一种节省空间的类
+
+union 是一种特殊的类。一个 union 可以有多个数据成员，但是在任意时刻只有一个数据成员可以有值。当我们给 union 的某个成员赋值之后，该 union 的其他成员就变成为定义的状态了。union 可以为期成员指定 public、protected 和 private 等保护标记。默认情况下，union 的成员都是公有的，这一点与 struct 相同。union 可以定义包括构造函数和析构函数在内的成员函数。但是由于 union 既不能继承自其他类，也不能作为基类使用，所以在 union 中不能含有虚函数。
+
+定义与使用 union 的示例代码如下：
+
+```CPP
+union Token {
+	char cval;
+	int ival;
+	double dval;
+};
+
+Token first_token = {'a'};
+Token last_token;
+Token *pt = new Token;
+
+last_token.cval = 'z';
+pt->ival = 42;
+```
+
+匿名 union 的定义与使用的示例代码如下：
+
+```CPP
+union {
+	char cval;
+	int ival;
+	double dval;
+};
+
+cval = 'c';
+ival = 42;
+```
+
+匿名 union 不能包含受保护的成员或私有成员，也不能定义成员函数。
+
+当我们想将 union 的值改为类类型成员对应的值，或者将类类型成员的值改为一个其他值，则必须分别构造或析构该类类型的成员：当我们将 union 的值改为类类型成员的值时，必须运行该类型的构造函数；反之，我们将类类型成员的值改为一个其他值时，必须运行该类型的析构函数。
+
+当 union 包含的是内置类型的成员时，编译器将按照成员的次序合成默认构造函数或拷贝控制成员。但是如果 union 含有类类型的成员，并且该类型自定义了默认构造函数或拷贝控制成员，则编译器将为 union 合成对应的版本并将其声明为删除的。
+
+### 局部类
+
+类可以定义在某个函数的内部，我们称这样的类为**局部类**。局部类定义的类型只在定义它的作用域内可见。
+
+局部类的所有成员（包括函数在内）都必须完整定义在类的内部。因此，局部类的作用与嵌套类相比相差很远。
+
+局部类不能使用函数作用域中的变量，局部类对其外层作用域中名字的访问权限收到很多限制，局部类只能访问外层作用域定义的类型名、静态变量以及枚举成员。并不能修改他们的值，只能访问。示例代码如下：
+
+```CPP
+int a, val;
+void foo(int val) {
+	static int si;
+	enum Loc { a = 1024, b };
+
+	struct Bar {
+		Loc locVal;			// 正确：使用一个局部类型名
+		int barVal;
+
+		void fooBar(Loc l = a) {	// 正确：默认实参是 Loc::a
+			barVal = val;		// 错误：val 是 foo 的局部变量
+			barVal = ::val;		// 正确：使用一个全局对象
+			barVal = si;		// 正确：使用一个静态局部对象
+			locVal = b;		// 正确：使用一个枚举成员
+		}
+	};
+	// ...
+}
+```
+
+外层函数对局部类的私有成员没有访问权限。但是我们可以在局部类中将外部函数声明成友元，声明完成后外层函数就可以访问局部类的私有成员了
+
+可以在局部类中再嵌套一个类。此时，嵌套类的定义可以出现在局部类之外。不过，嵌套必须定义在与局部类相同的作用域中。
+
+### 固有的不可移植的特性
+
+### 位域
+
+类可以将其（非静态）数据成员定义成**位域**，在一个位域中含有一定数量的二进制位。当一个程序需要向其他程序或硬件设备传递二进制数据时，通常会用到位域。位域的声明形式是在成员名字之后紧跟一个冒号以及一个常量表达式，该表达式用于指定成员所占的二进制位数，示例代码如下：
+
+```CPP
+typedef unsigned int Bit;
+class File {
+	Bit mode: 2;
+	Bit modified: 1;
+	Bit prot_owner: 3;
+	Bit prot_group: 3;
+	Bit prot_world: 3;
+
+public:
+	enum modes { READ = 01, WRITE = 02, EXECUTE = 03 };
+	File &open(modes);
+	void close();
+	void write();
+	bool isRead() const;
+	void setWrite();
+}
+```
+
+**注：通常情况下最好将位域设为无符号类型，存储在带符号类型中的位域的行为将因具体情况而定**
+
+### volatile
+
+volatile 关键字总结起来就是他通知编译器告诉编译器不要更改或优化 volatile 所声明的变量或者函数
+
+我们不能使用合成的拷贝/移动构造函数及赋值运算符初始化 volatile 对象或从 volatile 对象赋值。合成的成员接受的形参类型是（非 volatile）常量引用，显然我们不能把一个非 volatile 引用绑定到一个 volatile 对象上
+
+### 链接指示： extern "C"
+
+要想把 C++ 代码和其他语言（包括 C 语言）编写的代码放在一起使用，要求我们必须有权访问该语言的编译器，并且这个编译器与当前 C++ 编译器是兼容的。
+
+声明一个非 C++ 函数示例代码如下：
+
+```CPP
+extern "C" size_t strlen(const char *);
+
+extern "C" {
+	int strcmp(const char *, const char *);
+	char *strcat(char *, const char *);
+}
+```
+
+声明一个指向 C 函数的指针示例代码如下：
+
+```CPP
+extern "C" void (*pf)(int);
+```
+
+导出 C++ 函数到其他语言，示例代码如下：
+
+```CPP
+extern "C" double calc(double dparm) { /* ... */ }
+```
+
+链接只是与重载函数的相互作用依赖于目标语言。如果目标语言支持重载函数，则为该语言实现链接指示的编译器很可能也支持重载这些 C++ 的函数。

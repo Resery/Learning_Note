@@ -353,3 +353,374 @@ fn dangle() -> String {
 
 ### Slices
 
+Slice 和 python 中的切片用法基本一致，简单的使用示例代码如下：
+
+```rust
+fn main() {
+    let s = String::from("hello world");
+
+    let hello = &s[0..5];
+    let world = &s[6..11];
+
+    println!("{}", hello);
+    println!("{}", world);
+
+    println!("{}", &s[..2]);
+    println!("{}", &s[2..]);
+
+    println!("{}", &s[0..s.len()]);
+    println!("{}", &s[..]);
+}
+```
+
+字符串字面值就是 slice ，例如下面代码中的 s 的类型是 &s，他是一个指向二进制程序特定位置的 slice。这也就是为什么字符串字面值是不可变的；&str 是不可变引用
+
+```rust
+let s = "hello world";
+```
+
+数组也可以使用 slice，代码示例如下：
+
+```rust
+```
+
+## 使用结构体来组织相关联的数据
+
+### 定义并实例化结构体
+
+声明与定义一个结构体示例代码如下：
+
+```rust
+struct User {
+	username: String,
+	email: String,
+	sign_in_count: u64,
+	active: bool,
+}
+
+let user1 = User {
+	email: String::from("resery.email@gmail.com"),
+	username: String::from("resery"),
+	active: true,
+	sign_in_count: 1,
+}
+
+let mut user1 = User {
+	email: String::from("resery.email@gmail.com"),
+	username: String::from("resery"),
+	active: true,
+	sign_in_count: 1,
+};
+
+user1.email = String::from("18700057065@qq.com");
+```
+
+rust 不允许只将某个字段标记为可变
+
+另一个利用变量与字段同名时的字段初始化简写语法
+
+```rust
+fn build_user(email: String, username: String) -> User {
+	User {
+		email,
+		username,
+		active: true,
+		sign_in_count: 1,
+	}
+}
+```
+
+利用另一个结构体来初始化新的结构体示例代码如下：
+
+```rust
+let user2 = User {
+	email: String::from("resery.email@gmail.com"),
+	username: String::from("resery"),
+	active: user1.active,
+	sign_in_count: user1.sign_in_count,
+}
+
+let user2 = User {
+	email: String::from("resery.email@gmail.com"),
+	username: String::from("resery"),
+	..user1
+}
+```
+
+定义元组结构体示例代码如下：
+
+```rust
+struct Color(i32, i32, i32);
+struct Point(i32, i32, i32);
+
+let black = Color(0, 0, 0);
+let orign = Point(0, 0, 0);
+
+// 注意 black 和 origin 的值类型是不同的，因为他们是不同的元祖结构体实例。你定义的每一个结构体
+// 有其自己的类型，即使结构体中的字段有着相同的类型。
+```
+
+关于结构体的输出，使用 '{:?}' 会让 println 用一种 Debug 的输出格式来进行输出，Debug 是一个 trait，它允许我们以一种开发者有帮助的方式打印结构体，使用 '{:#?}' 和上面功能相同只不过会以一种更漂亮的形式进行输出，示例代码如下：
+
+```rust
+#[derive(Debug)]
+struct Rectangle {
+	width: u32,
+	height: u32,
+}
+
+fn main() {
+	let rect1 = Rectangle { width: 30, height: 50 };
+
+	println!("rect1 is {:?}", rect1);
+	println!("rect1 is {:#?}", rect1);
+}
+
+output:
+
+rect1 is Rectangle { width: 30, height: 50 }
+rect1 is Rectangle {
+    width: 30,
+    height: 50,
+}
+```
+
+### 方法语法
+
+示例代码如下：
+
+```rust
+#[derive(Debug)]
+struct Rectangle {
+	width: u32,
+	height: u32,
+}
+
+impl Rectangle {
+    fn area(&self) -> u32 {
+        self.width * self.height
+    }
+}
+
+fn main() {
+	let rect1 = Rectangle { width: 30, height: 50 };
+
+	println!("The area of the rectangel is {} square pixels.", rect1.area());
+}
+```
+
+使用方法替换函数，除了可使用方法语法和不需要在每个函数签名中重复 self 类型之外，其主要好处在于组织性。我们将某个类型示例所能做的所有事情都一起放入一个 impl 块中，而不是让将来的用户在我们的库中到处寻找 Rectangle 的功能
+
+rust 中没有 -> 运算符。相反，rust 中有一个叫 自动引用和解引用的功能
+
+impl 块的另一个有用的功能是：允许在 impl 块中定义不以 self 作为参数的函数。这被称为关联函数，它们仍是函数而不是方法，因为它们并不作用于一个结构体的实例，示例代码如下：
+
+```CPP
+impl Rectangle {
+	fn square(size: u32) -> Rectangle {
+		Rectangle { width: size, height: size }
+	}
+}
+
+let sq = Rectangle::square(3);
+```
+
+每个结构体可以拥有多个 impl 块，比如上面的代码也可以写成这样：
+
+```rust
+impl Rectangle {
+	fn area(&self) -> u32 {
+		self.width * self.height
+	}
+}
+
+impl Rectangle {
+	fn can_hold(&self, Other: &Rectangle) -> bool {
+		self.width > Other.width && self.height > Other.height
+	}
+}
+```
+
+## 枚举于模式匹配
+
+声明于定义枚举示例代码如下：
+
+```rust
+enum IpAddr {
+	V4(u8, u8, u8, u8),
+	V6(String),
+}
+
+let home = IpAddr::V4(127, 0, 0, 1);
+let loopback = IpAddr::V6(String::from("::1"));
+```
+
+标准库中定义 IpAddr 的代码如下，下面的代码展示了可以将任意类型的数据放入枚举成员中：例如字符串、数字类型或者结构体。甚至可以包含另一个枚举
+
+```rust
+struct Ipv4Addr {
+	// --snip--
+}
+
+struct Ipv6Addr {
+	// --snip--
+}
+
+enum IpAddr {
+	V4(Ipv4Addr),
+	V6(Ipv6Addr),
+}
+```
+
+```rust
+enum Message {
+	Quit,
+	Move { x: i32, y: i32},
+	Write(String),
+	ChangeColor(i32, i32, i32),
+}
+```
+
+枚举和结构体一样都可以使用 impl 来为自己定义方法，示例代码如下：
+
+```rust
+impl Message {
+	fn call(&self) {
+		// 在这里定义方法
+	}
+}
+
+let m = Message::Write(String::from("hello"));
+m.call();
+```
+
+Option<T> 枚举的使用示例代码如下：
+
+```rust
+enum Option<T> {
+	Some(T),
+	None,
+}
+
+let some_number = Some(5);
+let some_string = Some("a string");
+
+let absent_number: Option<i32> = None;
+
+let x: i8 = 5;
+let y: Option<i8> = None;
+
+let sum = x + y;  	// 错误，因为他尝试将 Option<i8> 与 i8 相加
+```
+
+match 的示例代码如下：
+
+```rust
+enum Coin {
+	Penny,
+	Nickel,
+	Dime,
+	Quarter,
+}
+
+fn value_in_cents(coin: Coin) -> u8 {
+	match coin {
+		Coin::Penny => {
+			println!("Lucky penny!");
+			1
+		},
+		Coin::Nickel => 5,
+		Coin::Dime => 10,
+		Coin::Quarter => 25,
+	}
+}
+```
+
+匹配分支的另一个有用的功能是可以绑定匹配的模式的部分值，示例代码如下：
+
+```rust
+#[derive(Debug)]
+enum UsState {
+	Alabama,
+	Alaska,
+	// --snip--
+}
+
+enum Coin {
+	Penny,
+	Nickel,
+	Dime,
+	Quarter(UsState),
+}
+```
+
+Rust 中匹配是穷尽的：必须穷举到最后的可能性来使代码有效，示例代码如下：
+
+```rust
+fn plus_one(x: Option<i32>) -> Option<i32> {
+	match x {
+		None => None,
+		Some(i) => Some(i + 1),
+	}
+}
+```
+
+Rust 也提供了一个模式用于不想列举出所有可能值的场景。例如 u8 可以拥有 0 到 255 范围的值，如果我们只关心1、3、5、7这几个值，就不必列出0、2、4、6、8、9 一直到 255 范围内的值。这里我们可以使用 `_` 替代：
+
+```rust
+let some_u8_value = 0u8;
+
+match some_u8_value {
+	1 => println!("one"),
+	3 => println!("three"),
+	5 => println!("five"),
+	7 => println!("seven"),
+	_ => (),
+}
+```
+
+if let 示例代码如下：
+
+```rust
+let mut count = 0;
+if let Coin::Quarter(state) = coin {
+	println!("State qurater from {:?}!", state);
+} else {
+	count += 1;
+}
+```
+
+## 使用包、Crate 和模块管理不断增长的项目
+
+- 包（Packages）： Cargo 的一个功能，它允许你构建、测试和分享 crate。
+- Crates ：一个模块的树形结构，它形成了库或二进制项目。
+- 模块（Modules）和 use： 允许你控制作用域和路径的私有性。
+- 路径（path）：一个命名例如结构体、函数或模块等项的方式
+
+模块示例代码如下：
+
+```rust
+mod front_of_house {
+	mod hosting {
+		fn add_to_waitlist() {}
+		fn seat_at_table() {}
+	}
+
+	mod serving {
+		fn take_over() {}
+		fn server_order() {}
+		fn take_payment() {}
+	}
+}
+
+// 对应的模块树的结构
+crate
+ └── front_of_house
+     ├── hosting
+     │   ├── add_to_waitlist
+     │   └── seat_at_table
+     └── serving
+         ├── take_order
+         ├── serve_order
+         └── take_payment
+```
