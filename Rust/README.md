@@ -1736,3 +1736,789 @@ fn longest_with_an_announcement<'a, T>(x: &'a str, y: &'a str, ann: T) -> &'a st
 ```
 
 ann 的类型是泛型 T，它可以被放入任何实现了 where 从句中指定的 Display trait 的类型。这个额外的参数会在函数比较字符串 slice 的长度之前被打印出来，这也就是为什么 Display trait bound 是必须的。因为生命周期也是泛型，所以生命周期参数 'a 和泛型类型参数 T 都位于函数名后的同一尖括号列表中。
+
+## 一个 I/O 项目：构建一个命令行程序
+
+这里就不添加过多的文字解释了，个人感觉多敲一敲才会熟练相应的内容，也可以用 rust 写一下 leetcode 上面的题目来练习一下
+
+```rust
+main.rs:
+
+use std::env;
+use std::process;
+
+use formatted_print::config::Config;
+
+fn main() {
+	let args: Vec<String> = env::args().collect();
+
+	let config = Config::new(&&args).unwrap_or_else( |err| {
+		println!("Problem parsing arguments: {}", err);
+		process::exit(1);
+	});
+
+	println!("Searching for {}", config.query);
+	println!("In file {}\n", config.filename);
+
+	formatted_print::config::run(config).unwrap_or_else( |err| {
+		println!("Application error: {}", err);
+		process::exit(1);
+	})
+}
+
+lib.rs:
+
+pub mod config {
+	use std::collections::HashMap;
+
+	pub struct Config {
+		pub query: String,
+		pub filename: String,
+	}
+
+	impl Config {
+		pub fn new(args: &[String]) -> Result<Config, &'static str> {
+			if args.len() != 3 {
+				return Err("not enough arguments");
+			}
+			let query = args[1].clone();
+			let filename = args[2].clone();
+
+			Ok(Config { query, filename })
+		}
+
+	}
+	pub fn run(config: Config) -> Result<(), Box<dyn std::error::Error>> {
+		let contents = std::fs::read_to_string(config.filename)?;
+
+		for (number , line) in search(&config.query, &contents).iter() {
+			println!("{}: {}", number, line);
+		}
+
+		Ok(())
+	}
+
+	pub fn search<'a>(query: &str, contents: &'a str) -> HashMap<u32 , &'a str> {
+		let mut results = HashMap::new();
+		let mut number = 1;
+
+		for line in contents.lines() {
+			if line.contains(query) {
+				results.insert(number, line);
+			}
+
+			number += 1;
+		}
+
+		results
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn one_result() {
+		let query = "fast";
+		let contents = "\
+Rust:
+safe, fast, productive.
+Pick three.";
+
+		for (_, line) in config::search(query, contents) {
+			assert_eq!(
+				"safe, fast, productive.",
+				line
+			);
+		}
+	}
+}
+```
+
+## Rust 中的函数式语言功能：迭代器与闭包
+
+### 闭包：可以捕获其环境的匿名函数
+
+闭包的定义以一对竖线（｜）开始，在竖线中指定闭包的参数；闭包中可以定义多个参数，如果闭包体只有一行则大括号是可以省略的。大括号之后闭包的结尾，需要用于 let 语句的分号。因为闭包体的最后一行是没有分号的和函数体一样，所以闭包体最后一行的返回值作为调用闭包时的返回值，示例代码如下：
+
+```rust
+let vars = |var1| {
+	// --snip--
+};
+
+let elements = |element1, element2| {
+	// --snip--
+};
+```
+
+通常闭包通常很短，并只关联于小范围的上下文而非任意情境。在这些有闲置的上下文中，编译器能可靠的推断参数和返回值的类型，类似于它是如何能够推断大部分变量的类型一样，但是我们也可以手动的为闭包注明参数和返回值的类型：
+
+```rust
+let expensive_closure = |num: u32| -> u32 {
+	println!("calculating slowly...");
+	thread::sleep(Durantion::from_secs(2));
+	num
+}
+```
+
+如下是一个对其参数加一的函数的定义与拥有相同行为闭包语法的纵向对比，示例代码如下：
+
+```rust
+let add_one_v1 	 (x: u32) -> u32 { x + 1 }
+let add_one_v2 = |x: u32| -> u32 { x + 1 };
+let add_one_v3 = |x|			 { x + 1 };
+let add_one_v4 = |x|			   x + 1  ;
+```
+
+闭包定义回味每个参数和返回值推断一个具体类型，也就是说一个闭包只能用于一种类型的计算
+
+为了让结构体存放闭包，我们需要指定闭包的类型，因为结构体定义需要知道每一个字段的类型。每一个闭包实例有其自己独有的匿名类型：也就是说，即便两个闭包有着相同的签名，它们的类型仍然可以被认为是不同的。为了定义使用闭包的结构体、枚举或函数参数，需要使用泛型和 trait bound
+
+Fn 系列 trait 由标准库提供。所有的闭包都实现了 trait Fn、FnMut 或 FnOnce 中的一个。示例代码如下：
+
+```rust
+struct Cacher<T>
+	where T: Fn(u32) -> u32 {
+		calcuation: T,
+		value: Option<u32>,
+}
+```
+
+上面的代码中定义了一个结构体类型 Cacher，结构体 Cacher 有一个泛型 T 的字段 calculation。T 的 trait bound 指定了 T 是一个使用 Fn 的闭包。任何我们希望存储到 Cacher 实例的 calculation 字段的闭包必须有一个 u32 参数（由 Fn 之后的括号的内容指定）并必须返回一个 u32（由 -> 之后的内容）
+
+注：函数也都实现了这三个 Fn trait。如果不需要捕获环境中的值，则可以使用实现了 Fn trait 的函数而不是闭包
+
+```rust
+impl<T> Cacher<T>
+	where T: Fn(u32) -> u32 {
+	fn new(calcuation: T) -> Cacher<T> {
+		Cacher {
+			calculation,
+			value: None,
+		}
+	}
+
+	fn value(&mut self, arg: u32) -> u32 {
+		match self.value {
+			Some(v) => v,
+			None => {
+				let v = (self.calculation)(arg);
+				self.value = Some(v);
+				v
+			},
+		}
+	}
+}
+
+fn generate_workout(intensity: u32, random_number: u32) {
+	let mut expensive_result = Cacher::new(|num| {
+		println!("calculating slowly..");
+		thread::sleep(Duration::from_secs(2));
+		num
+	});
+
+	if intensity < 25 {
+		println!("Today, do {} pushups!", expensive_result.value(intensity));
+		println!("Next, do {} situps!", expensive_result.value(intensity));
+	} else {
+		if random_numbe == 3 {
+			println!("Take a break today! Remember to stay hydrated!");
+		} else {
+			println!("Today, run for {} minutes!", expensive_result.value(intensity));
+		}
+	}
+}
+```
+
+不同于直接将闭包保存进一个变量，我们保存一个新的 Cacher 实例来存放闭包。接着，在每一个需要结果的地方，调用 Cacher 实例的 value 方法。可以调用 value 方法任意多次，或者一次也不调用，而慢计算最多只会运行一次。
+
+闭包会捕获其环境，也就是说闭包可以使用上下文中的环境，换句话说就是上下文中的变量之类的资源，然而函数是不可以的，函数只能使用传递的参数，而不能使用调用处上下文的环境，示例代码如下：
+
+```rust
+fn main() {
+	let x = 4;
+
+	let equal_to_x = |z| z == x;
+
+	let y = 4;
+
+	assert!(equal_to_x(y));
+}
+```
+
+当闭包从环境中捕获一个值，闭包会在闭包体中存储这个值以供使用。这会使用内存并产生额外的开销。
+
+闭包可以通过三种方式捕获其环境，它们直接对函数的三种获取参数的方式：获取所有权、可变借用和不可变借用。这三种捕获值的方式被编码为如下三个 Fn trait：
+- FnOnce 消费从周围作用域捕获的变量，闭包周围的作用域被称为其**环境**，environment。为了消费捕获到的变量，闭包必须获取其所有权并在定义闭包时将其移动进闭包。其名称的 Once 部分代表了闭包不能多次获取相同变量的所有权的事实，所以它只能被调用一次。
+- FnMut 获取可变的借用值所以可以改变其环境
+- Fn 从其环境获取不可变的借用值
+
+在上面的代码中 equal_to_x 闭包不可变的借用了 x（所以 equal_to_x 具有 Fn trait），因为闭包体只需要读取 x 的值。
+
+如果你希望强制闭包获取其使用的环境值的所有权，可以在参数列表前使用 move 关键字，示例代码如下：
+
+```rust
+fn main() {
+	let x = vec![1, 2, 3];
+
+	let equal_to_x = move |z| z == x;
+
+	println!("can't use x here: {:?}", x);
+
+	let y = vec![1, 2, 3];
+
+	assert!(equal_to_x(y));
+}
+```
+
+上面的代码是不能编译的，因为上面的代码中使用了 move 将 x 的所有权转移到了闭包中，在闭包语句结束后，x 就被释放了，所以之后在 println 中使用 x 是不被允许的
+
+### 迭代器
+
+定义和使用一个迭代器的示例代码如下：
+
+```rust
+let v1 = vec![1, 2, 3];
+
+let v1_iter = v1.iter();
+
+for val in v1_iter {
+	println!("Got: {}", val);
+}
+```
+
+iterator trait 和 next 方法，其定义如下所示，其中 type Item 和 Self::Item 它们定义了 trait 的关联类型。现在还不需要知道什么是关联类型，只需要知道这段代码表明实现 Iterator trait 要求同时定义一个 Item 类型，这个 Item 类型被用作 next 方法的返回值类型。换句话说，Item 类型将是迭代器返回元素的类型，其中 next 是 Iterator 实现者被要求定义的唯一方法。next 一次返回迭代器中的一个项，封装在 Some 中，当迭代器结束时，他返回 None。
+
+```rust
+pub trait Iterator {
+	type Item;
+
+	fn next(&mut self) -> Option<Self::Item>;
+
+	// 此处省略了方法的默认实现
+}
+```
+
+map 方法使用闭包来调用每个元素以生成新的迭代器，示例代码如下：
+
+```rust
+let v1: Vec<i32> = vec![1, 2, 3];
+
+let v2: Vec<_> = v1.iter().map(|x| x + 1).collect();
+
+assert_eq!(v2, vec![2, 3, 4]);
+```
+
+因为 map 获取一个闭包，可以指定任何希望在遍历的每个元素上执行的操作。
+
+使用闭包获取环境，示例代码如下：
+
+```rust
+#[derive(PartialEq, Debug)]
+struct Shoe {
+	size: u32,
+	style: String,
+}
+
+fn shoes_in_my_size(shoes: Vec<Shoe>, shoe_size: u32) -> Vec<Shoe> {
+	shoes.into_iter()
+		.filter(|s| s.size == shoe_size)
+		.collect()
+}
+
+#[test]
+fn filters_by_size() {
+	let shoes = vec![
+		Shoe { size: 10, style: String::from("sneaker") },
+		Shoe { size: 13, style: String::from("sandal") },
+		Shoe { size: 10, style: String::from("boot") },
+	];
+
+	let in_my_size = shoes_in_my_size(shoes, 10);
+
+	assert_eq!(
+		in_my_size,
+		vec![
+			Shoe { size: 10, style: String::from("sneaker") },
+			Shoe { size: 10, style: String::from("boot") },
+		]
+	);
+}
+```
+
+实现 Iterator trait 来创建自定义迭代器，示例代码：
+
+```rust
+struct Counter {
+	count: 32,
+}
+
+impl Counter {
+	fn new() -> Counter {
+		Counter { count: 0 }
+	}
+}
+
+impl Iterator for Counter {
+	type Item = u32;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		self.count += 1;
+
+		if self.count < 6 {
+			Some(self.count)
+		} else {
+			None
+		}
+	}
+}
+```
+
+通过定义 next 方法实现 Iterator trait，我们现在就可以使用任何标准库定义的拥有默认实现的 Iterator trait 方法了，因为它们都使用了 next 方法的功能，示例代码如下：
+
+```rust
+#[test]
+fn using_other_iterator_trait_methods() {
+	let sum: u32 = Counter::new().zip(Counter::new().skip(1))
+								 .map(|a, b| a * b)
+								 .filter(|x| x % 3 == 0)
+								 .sum();
+
+	assert_eq!(18, sum);
+}
+```
+
+## 智能指针
+
+声明并且定义一个智能指针示例代码如下：
+
+```rust
+fn main() {
+	let b = Box::new(5);
+	println!("b = {}", b);
+}
+```
+
+使用 Box<T> 给递归类型一个已知大小的示例代码：
+
+```rust
+enum List {
+	Cons(i32, Box<List>),
+	Nil,
+}
+
+use crate::List::{Cons, Nil};
+
+fn main() {
+	let list = Cons(1,
+		Box::new(Cons(2,
+			Box::new(Cons(3,
+				Box::new(Nil))))));
+}
+```
+
+Box<T> 类型是一个智能指针，因为它实现了 Deref trait，它允许 Box<T> 值被当作引用对待。当 Box<T> 值离开作用域时，由于 Box<T> 类型 Drop trait 的实现，box 所指向的堆数据也会被清除。
+
+通过解引用运算符追踪指针的值的示例代码如下：
+
+```rust
+fn main() {
+	let x = 5;
+	let y = &x;
+
+	assert_eq!(5, x);
+	assert_eq!(5, *y);
+}
+```
+
+像引用一样使用 Box<T>，示例代码如下：
+
+```rust
+fn main() {
+	let x = 5;
+	let y = Box::new(x);
+
+	assert_eq!(5, x);
+	assert_eq!(5, *y);
+}
+```
+
+自定义智能指针的示例代码如下：
+
+```rust
+struct MyBox<T>(T);
+
+impl<T> MyBox<T> {
+	fn new(x: T) -> MyBox<T> {
+		MyBox()
+	}
+}
+```
+
+通过实现 Deref trait 将某些类型像引用一样处理，示例代码如下所示：
+
+```rust
+use std::ops::Deref;
+
+impl<T> Deref for MyBox<T> {
+	type Target = T;
+
+	fn deref(&self) -> &T {
+		&self.0
+	}
+}
+```
+
+当所涉及到当类型定义了 Deref trait，Rust 会分析这些类型并使用任意多次 Deref::deref 调用以获得匹配参数的类型。这些解析都发生在编译时，所以利用解引用强制多态并没有运行时惩罚！
+
+Rust 在发现类型和 trait 实现满足三种情况时会进行解引用强制多态
+- 当 T: Deref<Target=U> 时从 &T 到 &U
+- 当 T: DerefMut<Target=U> 时从 &mut T 到 &mut U
+- 当 T: Deref<Target=U> 时从 &mut T 到 &U
+
+Rust 可以将可变引用强制转换为不可变引用。但是反之是**不可能**的
+
+自行实现 Drop trait 的实例代码如下：
+
+```rust
+struct CustomSmartPointer {
+	data: String,
+}
+
+impl Drop for CustomSmartPointer {
+	fn drop(&mut self) {
+		println!("Dropping CustomSmartPointer with data {}!")
+	}
+}
+
+fn main() {
+	let c = CustomSmartPointer { data: String::from("my stuff") };
+	let d = CustomSmartPointer { data: String::from("other stuff") };
+	println!("CustomSmartPointers created.");
+}
+```
+
+当实例离开作用域 Rust 会自动调用 drop，并调用我们指定当代码。
+
+通过 std::mem::drop 提早丢弃值，不幸的是，我们并不能直截了当的禁用 drop 这个功能。通常也不需要禁用 drop ；整个 Drop trait 存在的意义在于其是自动处理的。然而，有时你可能需要提早清理某个值。一个例子是当使用智能指针管理锁时；你可能希望强制运行 drop 方法来释放锁以便作用域中的其他代码可以获取锁。Rust 并不允许我们主动调用 Drop trait 的 drop 方法；当我们希望在作用域结束之前就强制释放变量的话，我们应该使用的是由标准库提供的 std::mem::drop。示例代码如下：
+
+```rust
+fn main() {
+	let c = CustomSmartPointer { data: String::from("some data") };
+	println!("CustomSmartPointer created.");
+
+	// c.drop(); 是不能编译的，显式调用 Drop trait 时会析构一次分配的实例，但是在 main
+	// 结束时还会再调用一次 drop trait，这样会造成 double free ，所以不允许显式的调用
+	// Drop trait
+
+	drop(c);
+	println!("CustomSmartPointer dropped before the end of main.");
+}
+```
+
+使用引用计数智能指针的示例代码如下，使用 Rc<T> 共享数据
+
+```rust
+enum List {
+	Cons(i32, Rc<List>),
+	Nil,
+}
+
+use crate::List{ Cons, Nil };
+use std::rc::Rc;
+
+fn main() {
+	let a = Rc::new(Cons(5, Rc::new(Cons(10, Rc::new(Nil)))));
+	let b = Cons(3, Rc::clone(&a));
+	let c = Cons(4, Rc::clone(&a));
+}
+```
+
+Rc::clone 只会增加引用计数，而 clone 方法是会进行深拷贝，所以 clone 会比 Rc::clone 更耗时
+
+Rc::strong_count 函数会返回当前的引用计数，示例代码如下：
+
+```rust
+fn main() {
+	let a = Rc::new(Cons(5, Rc::new(10, Rc::new(Nil))));
+	println!("count after creating a = {}", Rc::strong_count(&a));
+
+	let b = Cons(3, Rc::clone(&a));
+	println!("count after creating b = {}", Rc::strong_count(&a));
+
+	{
+		let c = Cons(4, Rc::clone(&a));
+		println!("count after creating c = {}", Rc::strong_count(&a));
+	}
+
+	println!("count after c goes out of scope = {}", Rc::strong_count(&a));
+
+}
+
+output:
+
+count after creating a = 1
+count after creating b = 2
+count after creating c = 3
+count after c goes out of scope = 2
+```
+
+RefCell<T> 于 Box<T> 和 引用的区别
+
+对于引用和 Box<T>，借用规则的不可变性作用于编译时。对于 RefCell<T>，这些不可变性作用于 运行时。对于引用，如果违反这些规则，会得到一个编译错误。而对于 RefCell<T>，如果违反这些规则程序会 panic 并退出。
+
+Box<T> Ref<T> RefCell<T> 的应用场景：
+- Rc<T> 允许相同数据有多个所有者；Box<T> 和 RefCell<T> 有单一所有者。
+- Box<T> 允许在编译时执行不可变或可变借用检查；Rc<T>仅允许在编译时执行不可变借用检查；RefCell<T> 允许在运行时执行不可变或可变借用检查。
+- 因为 RefCell<T> 允许在运行时执行可变借用检查，所以我们可以在即便 RefCell<T> 自身是不可变的情况下修改其内部的值。
+
+在不可变值内部改变值就是 **内部可变性** 模式。
+
+RefCell<T> 在运行时记录借用，当创建不可变和可变引用时，我们分别使用 & 和 &mut 语法。对于 RefCell<T> 来说，则是 borrow 和 borrow_mut 方法，这属于 RefCell<T> 安全 API 的一部分。borrow 方法返回 Ref<T> 类型的智能指针，borrow_mut 方法返回 RefMut 类型的智能指针。这两个类型都实现了 Deref，所以可以当作常规引用对待。
+
+RefCell<T> 记录当前有多少个活动的 Ref<T> 和 RefMut<T> 智能指针。每次调用 borrow，RefCell<T> 将活动的不可变借用计数加一。当 Ref<T> 值离开作用域时，不可变借用计数减一。就像编译时借用规则一样，RefCell<T> 在任何时候只允许有多个不可变借用或一个可变借用。
+
+### 结合 Rc<T> 和 RefCell<T> 来拥有多个可变数据所有者
+
+Rc<T> 允许对相同数据有多个所有者，不过只能提供数据的不可变访问。如果有一个储存了 RefCell<T> 的 Rc<T> 的话，就可以得到有多个所有者 并且 可以修改的值了！示例代码如下：
+
+```rust
+#[derive(Debug)]
+enum List {
+	Cons(Rc<RefCell<i32>>, Rc<List>),
+	Nil,
+}
+
+use crate::List::{Cons, Nil};
+use std::rc::Rc;
+use std::cell::RefCell;
+
+fn main() {
+	let value = Rc::new(RefCell::new(5));
+
+	let a = Rc::new(Cons(Rc::clone(&value), Rc::new(Nil)));
+
+	let b = Cons(Rc::new(RefCell::new(6), Rc::clone(&a)));
+	let c = Cons(Rc::new(RefCell::new(10), Rc::clone(&a)));
+
+	*value.borrow_mut() += 10;
+
+	println!("a after = {:?}", a);
+	println!("b after = {:?}", b);
+	println!("c after = {:?}", c);
+}
+
+output:
+
+a after = Cons(RefCell { value: 15 }, Nil)
+b after = Cons(RefCell { value: 6 }, Cons(RefCell { value: 15 }, Nil))
+c after = Cons(RefCell { value: 10 }, Cons(RefCell { value: 15 }, Nil))
+```
+
+解析一下上面的代码
+- 首先声明了一个 value 变量，value 变量存储的是一个智能指针，该指针会指向一个可以被多可变引用的 int 类型数据
+- 然后声明了一个 a 变量，a 变量也是一个智能指针该指针指向一个可被多不可变引用的 Cons 类型数据，并且这个数据是来自 value 的不可变引用
+- 其次声明了一个 b 变量，b 变量是一个链表，该表中存储了一个智能指针，该指针指向一个可变引用的 int 类型数据和一个 a 的不可变引用
+- 最后声明了一个 c 变量，c 变量也是一个链表，该表中存储了一个智能指针，该指针指向一个可变引用的 int 类型数据和一个 a 的不可变引用
+- 这里分析一下 a 其实是一个指针指向了一个 Cons 类型的变量，然后变量中的第一个值来自于对 value 的引用，b 和 c 同样只不过 b 和 c 不是指针，但是这两个变量的第二个值都来自于对 a 的引用，换句话说也就是 a 的第一个值和 value 的值相同，b 和 c 的第二个值指向的链表的第一个值和 value 的值相同
+
+### 引用循环和内存泄漏
+
+创建引用循环的可能性是存在的。这会造成内存泄漏，因为每一项的引用计数永远也到不了 0，其值也永远不会被丢弃。
+
+创建引用循环的示例代码如下：
+
+```rust
+fn main() {}
+use std::rc::Rc;
+use std::cell::RefCell;
+use crate::List::{Cons, Nil};
+
+#[derive(Debug)]
+enum List {
+    Cons(i32, RefCell<Rc<List>>),
+    Nil,
+}
+
+impl List {
+    fn tail(&self) -> Option<&RefCell<Rc<List>>> {
+        match self {
+            Cons(_, item) => Some(item),
+            Nil => None,
+        }
+    }
+}
+
+use crate::List::{Cons, Nil};
+use std::rc::Rc;
+use std::cell::RefCell;
+#[derive(Debug)]
+enum List {
+    Cons(i32, RefCell<Rc<List>>),
+    Nil,
+}
+
+impl List {
+    fn tail(&self) -> Option<&RefCell<Rc<List>>> {
+        match self {
+            Cons(_, item) => Some(item),
+            Nil => None,
+        }
+    }
+}
+
+fn main() {
+    let a = Rc::new(Cons(5, RefCell::new(Rc::new(Nil))));
+
+    println!("a initial rc count = {}", Rc::strong_count(&a));
+    println!("a next item = {:?}", a.tail());
+
+    let b = Rc::new(Cons(10, RefCell::new(Rc::clone(&a))));
+
+    println!("a rc count after b creation = {}", Rc::strong_count(&a));
+    println!("b initial rc count = {}", Rc::strong_count(&b));
+    println!("b next item = {:?}", b.tail());
+
+    if let Some(link) = a.tail() {
+        *link.borrow_mut() = Rc::clone(&b);
+    }
+
+    println!("b rc count after changing a = {}", Rc::strong_count(&b));
+    println!("a rc count after changing a = {}", Rc::strong_count(&a));
+
+    // Uncomment the next line to see that we have a cycle;
+    // it will overflow the stack
+    // println!("a next item = {:?}", a.tail());
+}
+
+output:
+
+a initial rc count = 1
+a next item = Some(RefCell { value: Nil })
+a rc count after b creation = 2
+b initial rc count = 1
+b next item = Some(RefCell { value: Cons(5, RefCell { value: Nil }) })
+b rc count after changing a = 2
+a rc count after changing a = 2
+```
+
+解析一下上面的代码
+- 首先声明变量 a，变量 a 是一个指针指向了一个 Cons 类型的数据，并且指向的数据的第二个元素同时指向了一个可以修改并且可以多次引用的变量
+- 此时输出 a 的引用计数为 1，a 的第二个元素为 Some(RefCell { value: Nil })
+- 然后声明变量 b，变量 b 同样也是一个指针指向了一个 Cons 类型的数据，指向的数据的第二个元素是 a 的引用，并且该引用是可以被多次引用且修改的
+- 此时输出 a 的引用计数位 2，b 的引用计数为 1，b 的第二个元素为 Some(RefCell { value: Cons(5, RefCell { value: Nil }) })
+- 因为 a 的第二个元素是一个可以被修改且多次引用的变量，所以我们在这里可以让其引用 b
+- 这时再输出 a 的引用技术则为 2，b 的引用计数也为 2，因为 a 和 b 的第二个元素都指向彼此
+
+### 避免引用：将 Rc<T> 替换为 Weak<T>
+
+调用 Rc::clone 会增加 Rc<T> 实例的 strong_count，和只在其 strong_count 为 0 时才会被清理的 Rc<T> 实例。但是我们可以通过调用 Rc::downgrade 并传递 Rc<T> 实例的引用来创建其值的 **弱引用（weak reference）**。调用 Rc::downgrade 时会得到 Weak<T> 类型的智能指针。不同于将 Rc<T> 实例的 strong_count 加1，调用 Rc::downgrade 会将 weak_count 加1。Rc<T> 类型使用 weak_count 来记录其存在多少个 Weak 引用，类似于 strong_count。其区别在于 weak_count 无需计数为 0 就能使 Rc<T> 实例被清理。
+
+**强引用代表如何共享 Rc<T> 实例的所有权，但弱引用并不属于所有权关系。**
+
+因为 Weak<T> 引用的值可能已经被丢弃了，为了使用 Weak<T> 所指向的值，我们必须确保其值仍然有效。为此可以调用 Weak<T> 实例的 upgrade 方法，这会返回 Option<Rc<T>>。如果 Rc<T> 值还未被丢弃，则结果是 Some；如果 Rc<T> 已被丢弃，则结果是 None。因为 upgrade 返回一个 Option<T>，我们确信 Rust 会处理 Some 和 None 的情况，所以它不会返回非法指针。
+
+创建树形数据结构：带有子节点的 Node，会使用 Weak<T> 作为父节点的类型而不是 Rc<T>，示例代码如下：
+
+```rust
+use std::rc::{Rc, Week};
+use std::cell::RefCell;
+
+#[derive(Debug)]
+struct Node {
+	value: i32,
+	parent: RefCell<Weak<Node>>,
+	children: RefCell<Vec<Rc<Node>>>,
+}
+
+fn main() {
+    let leaf = Rc::new(Node {
+        value: 3,
+        parent: RefCell::new(Weak::new()),
+        children: RefCell::new(vec![]),
+    });
+
+    println!("leaf parent = {:?}", leaf.parent.borrow().upgrade());
+
+    let branch = Rc::new(Node {
+        value: 5,
+        parent: RefCell::new(Weak::new()),
+        children: RefCell::new(vec![Rc::clone(&leaf)]),
+    });
+
+    *leaf.parent.borrow_mut() = Rc::downgrade(&branch);
+
+    println!("leaf parent = {:?}", leaf.parent.borrow().upgrade());
+}
+
+output:
+
+leaf parent = None
+leaf parent = Some(Node { value: 5, parent: RefCell { value: (Weak) },
+```
+
+可视化 strong_count 和 weak_count 的改变，示例代码如下：
+
+```rust
+use std::rc::{Rc, Weak};
+use std::cell::RefCell;
+
+#[derive(Debug)]
+struct Node {
+    value: i32,
+    parent: RefCell<Weak<Node>>,
+    children: RefCell<Vec<Rc<Node>>>,
+}
+
+fn main() {
+    let leaf = Rc::new(Node {
+        value: 3,
+        parent: RefCell::new(Weak::new()),
+        children: RefCell::new(vec![]),
+    });
+
+    println!(
+        "leaf strong = {}, weak = {}",
+        Rc::strong_count(&leaf),
+        Rc::weak_count(&leaf),
+    );
+
+    {
+        let branch = Rc::new(Node {
+            value: 5,
+            parent: RefCell::new(Weak::new()),
+            children: RefCell::new(vec![Rc::clone(&leaf)]),
+        });
+
+        *leaf.parent.borrow_mut() = Rc::downgrade(&branch);
+
+        println!(
+            "branch strong = {}, weak = {}",
+            Rc::strong_count(&branch),
+            Rc::weak_count(&branch),
+        );
+
+        println!(
+            "leaf strong = {}, weak = {}",
+            Rc::strong_count(&leaf),
+            Rc::weak_count(&leaf),
+        );
+    }
+
+    println!("leaf parent = {:?}", leaf.parent.borrow().upgrade());
+    println!(
+        "leaf strong = {}, weak = {}",
+        Rc::strong_count(&leaf),
+        Rc::weak_count(&leaf),
+    );
+}
+
+output:
+
+leaf strong = 1, weak = 0
+branch strong = 1, weak = 1
+leaf strong = 2, weak = 0
+leaf parent = None
+leaf strong = 1, weak = 0
+```
