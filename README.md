@@ -7,10 +7,8 @@
 ## 更新记录
 
 - [2022.02.20]
-  - RealWorld CTF Turst or not Wp: [Trust or Not](CTFs/RWCTF2022/RWCTF\ Trust\
-    or\ Not\ Wp.md)
-  - RealWorld CTF UntrustZone Wp: [UntrustZone](CTFs/RWCTF2022/RWCTF\
-    UntrustZone\ Wp.md)
+  - RealWorld CTF Turst or not Wp: [Trust or Not](CTFs/RWCTF2022/RWCTF\ Trust\ or\ Not\ Wp.md)
+  - RealWorld CTF UntrustZone Wp: [UntrustZone](CTFs/RWCTF2022/RWCTF\ UntrustZone\ Wp.md)
   - 每日好文: [Articles](Articles/Article\ Sum.md)
 
 ## 内容分类
